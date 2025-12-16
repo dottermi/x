@@ -120,9 +120,9 @@ func (i *Input) Readline(prompt string) (string, bool) {
 		}
 
 		if handler, exists := i.handlers[r]; exists {
-			result, done, ok := handler(i, reader)
-			if done {
-				return result, ok
+			result, act := handler(i, reader)
+			if act != actionContinue {
+				return result, act == actionSubmit
 			}
 			continue
 		}

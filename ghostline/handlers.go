@@ -17,56 +17,59 @@ const (
 	keyDelete    = 8   // Backspace control character (BS)
 )
 
-// keyHandler processes a key press and returns the result.
-// Returns: (result string, done bool, ok bool)
-//   - result: the text to return if done
-//   - done: whether to exit the input loop
-//   - ok: whether input was successful (true) or aborted (false)
-type keyHandler func(i *Input, reader *bufio.Reader) (string, bool, bool)
+type action int
 
-func handleCtrlC(i *Input, reader *bufio.Reader) (string, bool, bool) {
+const (
+	actionContinue action = iota
+	actionSubmit
+	actionAbort
+)
+
+type keyHandler func(i *Input, reader *bufio.Reader) (string, action)
+
+func handleCtrlC(i *Input, reader *bufio.Reader) (string, action) {
 	i.buffer = nil
 	i.render()
-	return "", true, false
+	return "", actionAbort
 }
 
-func handleCtrlD(i *Input, reader *bufio.Reader) (string, bool, bool) {
+func handleCtrlD(i *Input, reader *bufio.Reader) (string, action) {
 	if len(i.buffer) == 0 {
-		return "", true, false
+		return "", actionAbort
 	}
-	return "", false, false
+	return "", actionContinue
 }
 
-func handleTab(i *Input, reader *bufio.Reader) (string, bool, bool) {
+func handleTab(i *Input, reader *bufio.Reader) (string, action) {
 	ghost := i.findGhost()
 	if ghost != "" {
 		i.buffer = append(i.buffer, []rune(ghost)...)
 		i.render()
 	}
-	return "", false, false
+	return "", actionContinue
 }
 
-func handleEnter(i *Input, reader *bufio.Reader) (string, bool, bool) {
+func handleEnter(i *Input, reader *bufio.Reader) (string, action) {
 	fmt.Fprintln(i.out)
-	return string(i.buffer), true, true
+	return string(i.buffer), actionSubmit
 }
 
-func handleBackspace(i *Input, reader *bufio.Reader) (string, bool, bool) {
+func handleBackspace(i *Input, reader *bufio.Reader) (string, action) {
 	if len(i.buffer) > 0 {
 		i.buffer = i.buffer[:len(i.buffer)-1]
 		i.render()
 	}
-	return "", false, false
+	return "", actionContinue
 }
 
-func handleEscape(i *Input, reader *bufio.Reader) (string, bool, bool) {
+func handleEscape(i *Input, reader *bufio.Reader) (string, action) {
 	if reader.Buffered() > 0 {
 		reader.ReadByte()
 	}
 	if reader.Buffered() > 0 {
 		reader.ReadByte()
 	}
-	return "", false, false
+	return "", actionContinue
 }
 
 func defaultHandlers() map[rune]keyHandler {
