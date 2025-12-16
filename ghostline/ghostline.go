@@ -18,7 +18,6 @@ package ghostline
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"unicode"
@@ -35,12 +34,11 @@ type Input struct {
 	buffer      []rune
 	suggestions []string
 	prompt      string
+	handlers    map[rune]keyHandler
 
-	// I/O interfaces (allow mocking for tests)
 	in  io.Reader
 	out io.Writer
 
-	// Terminal state for raw mode restoration
 	fd       int
 	oldState *term.State
 }
@@ -69,6 +67,7 @@ func NewInput(suggestions []string, in io.Reader, out io.Writer) *Input {
 	}
 	return &Input{
 		suggestions: suggestions,
+		handlers:    defaultHandlers(),
 		in:          in,
 		out:         out,
 		fd:          int(os.Stdin.Fd()),
@@ -112,7 +111,6 @@ func (i *Input) Readline(prompt string) (string, bool) {
 	defer i.disableRawMode()
 
 	reader := bufio.NewReader(i.in)
-
 	i.render()
 
 	for {
@@ -121,48 +119,17 @@ func (i *Input) Readline(prompt string) (string, bool) {
 			return "", false
 		}
 
-		switch r {
-		case keyCtrlC:
-			i.buffer = nil
+		if handler, exists := i.handlers[r]; exists {
+			result, done, ok := handler(i, reader)
+			if done {
+				return result, ok
+			}
+			continue
+		}
+
+		if unicode.IsPrint(r) {
+			i.buffer = append(i.buffer, r)
 			i.render()
-			return "", false
-
-		case keyCtrlD:
-			if len(i.buffer) == 0 {
-				return "", false
-			}
-
-		case keyTab:
-			ghost := i.findGhost()
-			if ghost != "" {
-				i.buffer = append(i.buffer, []rune(ghost)...)
-				i.render()
-			}
-
-		case keyEnter:
-			fmt.Fprintln(i.out)
-			return string(i.buffer), true
-
-		case keyBackspace, keyDelete:
-			if len(i.buffer) > 0 {
-				i.buffer = i.buffer[:len(i.buffer)-1]
-				i.render()
-			}
-
-		case keyEscape:
-			// Consume escape sequences (arrow keys, etc.)
-			if reader.Buffered() > 0 {
-				reader.ReadByte()
-			}
-			if reader.Buffered() > 0 {
-				reader.ReadByte()
-			}
-
-		default:
-			if unicode.IsPrint(r) {
-				i.buffer = append(i.buffer, r)
-				i.render()
-			}
 		}
 	}
 }
