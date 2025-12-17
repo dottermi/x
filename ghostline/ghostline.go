@@ -32,6 +32,7 @@ import (
 // The zero value is not usable; always use NewInput to create Input instances.
 type Input struct {
 	buffer      []rune
+	cursorPos   int
 	suggestions []string
 	prompt      string
 	handlers    map[rune]keyHandler
@@ -104,6 +105,7 @@ func NewInput(suggestions []string, in io.Reader, out io.Writer) *Input {
 func (i *Input) Readline(prompt string) (string, bool) {
 	i.prompt = prompt
 	i.buffer = []rune{}
+	i.cursorPos = 0
 
 	if err := i.enableRawMode(); err != nil {
 		return "", false
@@ -128,7 +130,9 @@ func (i *Input) Readline(prompt string) (string, bool) {
 		}
 
 		if unicode.IsPrint(r) {
-			i.buffer = append(i.buffer, r)
+			// Insert at cursor position
+			i.buffer = append(i.buffer[:i.cursorPos], append([]rune{r}, i.buffer[i.cursorPos:]...)...)
+			i.cursorPos++
 			i.render()
 		}
 	}
