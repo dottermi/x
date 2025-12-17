@@ -49,7 +49,7 @@ func handleTab(i *Input, reader *bufio.Reader) (string, action) {
 }
 
 func handleEnter(i *Input, reader *bufio.Reader) (string, action) {
-	fmt.Fprintln(i.out)
+	_, _ = fmt.Fprintln(i.out)
 	return string(i.buffer), actionSubmit
 }
 
@@ -63,10 +63,10 @@ func handleBackspace(i *Input, reader *bufio.Reader) (string, action) {
 
 func handleEscape(i *Input, reader *bufio.Reader) (string, action) {
 	if reader.Buffered() > 0 {
-		reader.ReadByte()
+		_, _ = reader.ReadByte()
 	}
 	if reader.Buffered() > 0 {
-		reader.ReadByte()
+		_, _ = reader.ReadByte()
 	}
 	return "", actionContinue
 }
