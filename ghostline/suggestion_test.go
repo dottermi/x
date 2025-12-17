@@ -6,6 +6,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExtractLastWord(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"simple word", "hello", "hello"},
+		{"after space", "git com", "com"},
+		{"after open paren", "Class(", ""},
+		{"after quote", `Class("tex`, "tex"},
+		{"after comma", "a, b", "b"},
+		{"after colon", "key: val", "val"},
+		{"multiple delimiters", `fn(arg, "str`, "str"},
+		{"empty string", "", ""},
+		{"only delimiter", "(", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := extractLastWord(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestFindGhost(t *testing.T) {
 	t.Parallel()
 
@@ -111,5 +139,57 @@ func TestFindGhost(t *testing.T) {
 		ghost := input.findGhost()
 
 		assert.Equal(t, "LO", ghost)
+	})
+
+	t.Run("matches after open paren", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("Class(tex"),
+			suggestions: []string{"text-red", "text-blue"},
+		}
+
+		ghost := input.findGhost()
+
+		assert.Equal(t, "t-red", ghost)
+	})
+
+	t.Run("matches after quote", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune(`Class("tex`),
+			suggestions: []string{"text-red"},
+		}
+
+		ghost := input.findGhost()
+
+		assert.Equal(t, "t-red", ghost)
+	})
+
+	t.Run("matches after comma", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("a, hel"),
+			suggestions: []string{"hello"},
+		}
+
+		ghost := input.findGhost()
+
+		assert.Equal(t, "lo", ghost)
+	})
+
+	t.Run("no match after delimiter with no input", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("Class("),
+			suggestions: []string{"text-red"},
+		}
+
+		ghost := input.findGhost()
+
+		assert.Empty(t, ghost)
 	})
 }
