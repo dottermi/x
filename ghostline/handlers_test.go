@@ -136,6 +136,39 @@ func TestCursorPosition(t *testing.T) {
 		assert.Equal(t, 3, line)
 		assert.Equal(t, 0, col)
 	})
+
+	t.Run("getCursorPosition with emoji", func(t *testing.T) {
+		t.Parallel()
+
+		input := newTestInput("🚀hello", 4) // emoji (1 rune) + "hel" (3 runes)
+
+		line, col := input.getCursorPosition()
+
+		assert.Equal(t, 0, line)
+		assert.Equal(t, 5, col) // emoji=2 + hel=3
+	})
+
+	t.Run("getCursorPosition with CJK", func(t *testing.T) {
+		t.Parallel()
+
+		input := newTestInput("中文ok", 3) // 2 CJK + "o" (3 runes)
+
+		line, col := input.getCursorPosition()
+
+		assert.Equal(t, 0, line)
+		assert.Equal(t, 5, col) // 中=2 + 文=2 + o=1
+	})
+
+	t.Run("getCursorPosition mixed unicode", func(t *testing.T) {
+		t.Parallel()
+
+		input := newTestInput("a🚀b", 3) // a + emoji + b (3 runes)
+
+		line, col := input.getCursorPosition()
+
+		assert.Equal(t, 0, line)
+		assert.Equal(t, 4, col) // a=1 + 🚀=2 + b=1
+	})
 }
 
 func TestCtrlHandlers(t *testing.T) {

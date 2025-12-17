@@ -3,6 +3,8 @@ package ghostline
 import (
 	"fmt"
 	"strings"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // render displays the prompt, buffer, and ghost text with proper cursor positioning.
@@ -58,18 +60,18 @@ func (i *Input) render() {
 	if cursorLine > 0 {
 		prompt = i.contPrompt
 	}
-	col := len(prompt) + cursorCol
+	col := runewidth.StringWidth(prompt) + cursorCol
 	_, _ = fmt.Fprintf(i.out, "\033[%dG", col+1) // \033[nG is 1-indexed
 }
 
-// getCursorPosition returns the line number and column of the cursor.
+// getCursorPosition returns the line number and column (display width) of the cursor.
 func (i *Input) getCursorPosition() (line, col int) {
 	for _, r := range i.buffer[:i.cursorPos] {
 		if r == '\n' {
 			line++
 			col = 0
 		} else {
-			col++
+			col += runewidth.RuneWidth(r)
 		}
 	}
 	return line, col
