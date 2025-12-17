@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ghostline is a Go library that provides interactive readline functionality with "ghost text" (inline suggestions) support. It enables terminal applications to show autocomplete suggestions as dimmed text that users can accept with Tab.
+Ghostline is a minimal API for inline suggestions in Go. It provides readline functionality with ghost text — dimmed autocomplete suggestions that users accept with Tab.
 
 ## Build Commands
 
@@ -16,18 +16,21 @@ go vet ./...       # Static analysis
 
 ## Architecture
 
-The library consists of a single `Input` struct that manages interactive input with ghost text suggestions:
+The library consists of a single `Input` struct that manages interactive input:
 
-- **ghostline.go** - Core `Input` struct and main `Readline()` loop that handles raw terminal mode and character-by-character input processing
-- **suggestion.go** - `findGhost()` implements prefix-based suggestion matching against the last word typed
-- **render.go** - `render()` handles terminal output using ANSI escape codes (dim text for ghost suggestions, cursor positioning)
-- **terminal.go** - Raw mode enable/disable using `golang.org/x/term`
-- **keys.go** - Key constants (Ctrl+C, Tab, Enter, Backspace, etc.)
+- **ghostline.go** - Core `Input` struct and `Readline()` loop with raw terminal mode
+- **handlers.go** - Key handlers for navigation, editing, and history
+- **history.go** - Command history with up/down navigation
+- **suggestion.go** - `findGhost()` prefix matching against last word
+- **render.go** - ANSI escape codes for multiline rendering and cursor positioning
+- **terminal.go** - Raw mode using `golang.org/x/term`
+- **keys.go** - Key constants
+- **errors.go** - `ErrInterrupted` (Ctrl+C) and `ErrEOF` (Ctrl+D)
 
 ## Key Behaviors
 
-- Tab accepts the current ghost suggestion
-- Ghost text appears as dimmed text after the cursor
-- Suggestions match against the last word (space-delimited)
-- Ctrl+C and Ctrl+D abort input
-- The library uses dependency injection for `io.Reader`/`io.Writer` to support testing
+- Tab accepts ghost suggestion
+- Enter submits, Ctrl+J adds newline
+- Arrow keys for cursor movement and history
+- Emacs keybindings (Ctrl+A/E/K/U/W)
+- Dependency injection for `io.Reader`/`io.Writer` (testing)
