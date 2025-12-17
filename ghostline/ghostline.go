@@ -70,13 +70,19 @@ func NewInput(suggestions []string, in io.Reader, out io.Writer) *Input {
 	if out == nil {
 		out = os.Stdout
 	}
+
+	fd := int(os.Stdin.Fd())
+	if f, ok := in.(*os.File); ok {
+		fd = int(f.Fd())
+	}
+
 	return &Input{
 		suggestions: suggestions,
 		handlers:    defaultHandlers(),
 		history:     NewHistory(),
 		in:          in,
 		out:         out,
-		fd:          int(os.Stdin.Fd()),
+		fd:          fd,
 	}
 }
 
