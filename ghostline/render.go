@@ -1,14 +1,41 @@
 package ghostline
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // render displays the prompt, buffer, and ghost text with proper cursor positioning.
-// Handles cursor placement at any position within the buffer.
+// Handles multiline input with continuation prompts.
 func (i *Input) render() {
-	// Clear line and write prompt + buffer
-	_, _ = fmt.Fprintf(i.out, "\r\033[K%s%s", i.prompt, string(i.buffer))
+	// Move cursor up to first line if we had multiple lines before
+	if i.prevLines > 1 {
+		_, _ = fmt.Fprintf(i.out, "\033[%dA", i.prevLines-1)
+	}
 
-	// Get ghost text (only shown when cursor is at end)
+	// Clear from cursor to end of screen
+	_, _ = fmt.Fprintf(i.out, "\r\033[J")
+
+	// Split buffer into lines
+	lines := strings.Split(string(i.buffer), "\n")
+	i.prevLines = len(lines)
+
+	// Find cursor line and column
+	cursorLine, cursorCol := i.getCursorPosition()
+
+	// Render each line
+	for idx, line := range lines {
+		if idx > 0 {
+			_, _ = fmt.Fprint(i.out, "\n\r") // \n moves down, \r goes to column 0
+		}
+		if idx == 0 {
+			_, _ = fmt.Fprintf(i.out, "%s%s", i.prompt, line)
+		} else {
+			_, _ = fmt.Fprintf(i.out, "%s%s", i.contPrompt, line)
+		}
+	}
+
+	// Get ghost text (only shown when cursor is at end of last line)
 	ghost := ""
 	if i.cursorPos == len(i.buffer) {
 		ghost = i.findGhost()
@@ -20,8 +47,30 @@ func (i *Input) render() {
 	}
 
 	// Position cursor correctly
-	moveBack := len(i.buffer) - i.cursorPos + len(ghost)
-	if moveBack > 0 {
-		_, _ = fmt.Fprintf(i.out, "\033[%dD", moveBack)
+	// Move to the cursor line (from the last line)
+	linesFromEnd := len(lines) - 1 - cursorLine
+	if linesFromEnd > 0 {
+		_, _ = fmt.Fprintf(i.out, "\033[%dA", linesFromEnd)
 	}
+
+	// Move to correct column using absolute positioning
+	prompt := i.prompt
+	if cursorLine > 0 {
+		prompt = i.contPrompt
+	}
+	col := len(prompt) + cursorCol
+	_, _ = fmt.Fprintf(i.out, "\033[%dG", col+1) // \033[nG is 1-indexed
+}
+
+// getCursorPosition returns the line number and column of the cursor.
+func (i *Input) getCursorPosition() (line, col int) {
+	for _, r := range i.buffer[:i.cursorPos] {
+		if r == '\n' {
+			line++
+			col = 0
+		} else {
+			col++
+		}
+	}
+	return line, col
 }

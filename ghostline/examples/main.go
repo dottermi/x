@@ -14,8 +14,8 @@ func main() {
 
 	input := ghostline.NewInput(suggestions, nil, nil)
 
-	fmt.Println("Ghostline Demo")
-	fmt.Println("Tab=accept, ↑↓=history, Ctrl+D=exit")
+	fmt.Println("👻 Ghostline Demo")
+	fmt.Println("Tab=accept • ↑↓=history • Ctrl+J=newline • Ctrl+D=exit")
 	fmt.Println()
 
 	for {

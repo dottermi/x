@@ -36,6 +36,8 @@ type Input struct {
 	cursorPos   int
 	suggestions []string
 	prompt      string
+	contPrompt  string // continuation prompt for multiline
+	prevLines   int    // previous line count for clearing
 	handlers    map[rune]keyHandler
 	history     *History
 
@@ -123,8 +125,10 @@ func (i *Input) AddHistory(line string) {
 //	}
 func (i *Input) Readline(prompt string) (string, error) {
 	i.prompt = prompt
+	i.contPrompt = "... "
 	i.buffer = []rune{}
 	i.cursorPos = 0
+	i.prevLines = 1
 	i.history.Reset("")
 
 	if err := i.enableRawMode(); err != nil {
