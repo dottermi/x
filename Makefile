@@ -1,4 +1,4 @@
-.PHONY: help test lint fmt install-dev-dependencies example
+.PHONY: help lint fmt install-dev-dependencies test
 # Default target
 help: ## Show this help message
 	@echo "Available commands:"
@@ -25,4 +25,9 @@ fmt: ## Format code
 		fi \
 	done
 
-
+test: ## Run tests with formatted output and coverage
+	@for dir in */; do \
+		if [ -f "$$dir/go.mod" ]; then \
+			(cd "$$dir" && go test $$(go list ./... | grep -v /examples/) -json -cover 2>&1 | gotestfmt -hide successful-tests,empty-packages); \
+		fi \
+	done
