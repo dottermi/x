@@ -10,7 +10,17 @@ install-dev-dependencies: ## Install development dependencies
 	@go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
 
 lint: ## Run linter
-	@golangci-lint run
+	@for dir in */; do \
+		if [ -f "$$dir/go.mod" ]; then \
+			echo "Linting $$dir..."; \
+			(cd "$$dir" && golangci-lint run -c ../.golangci.yml ./...); \
+		fi \
+	done
 
 fmt: ## Format code
-	@go fmt ./...
+	@for dir in */; do \
+		if [ -f "$$dir/go.mod" ]; then \
+			echo "Formatting $$dir..."; \
+			(cd "$$dir" && go fmt ./...); \
+		fi \
+	done
