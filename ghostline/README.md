@@ -70,6 +70,12 @@ func main() {
 | Home/End | Line boundaries     |
 | Delete   | Delete char         |
 
-## License
+## `example`
+
+```
+go run ./examples/main.go
+```
+
+## `license`
 
 MIT
