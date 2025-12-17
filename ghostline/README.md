@@ -1,8 +1,8 @@
-# `./ghostline`
+# `./ghostline 👻`
 
 Readline library for Go with ghost text (inline suggestions).
 
-## Features
+## `features`
 
 - Ghost text suggestions (dimmed inline completions)
 - Tab to accept suggestions
@@ -10,13 +10,13 @@ Readline library for Go with ghost text (inline suggestions).
 - Multiline editing (Ctrl+J)
 - Emacs-style keybindings
 
-## Install
+## `install`
 
 ```bash
-go get github.com/termisquad/x/ghostline
+go get github.com/termisquad/x/ghostline@latest
 ```
 
-## Usage
+## `usage`
 
 ```go
 package main
@@ -51,7 +51,7 @@ func main() {
 }
 ```
 
-## Keybindings
+## `keybindings`
 
 | Key      | Action              |
 | -------- | ------------------- |

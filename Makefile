@@ -24,3 +24,5 @@ fmt: ## Format code
 			(cd "$$dir" && go fmt ./...); \
 		fi \
 	done
+
+
