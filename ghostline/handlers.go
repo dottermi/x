@@ -86,27 +86,48 @@ func handleEscape(i *Input, reader *bufio.Reader) (string, action) {
 	return "", actionContinue
 }
 
+type csiHandler func(i *Input, reader *bufio.Reader)
+
+var csiHandlers = map[byte]csiHandler{
+	'C': handleRightArrow,
+	'D': handleLeftArrow,
+	'H': handleHome,
+	'F': handleEnd,
+	'3': handleDelete,
+}
+
 func (i *Input) handleCSI(code byte, reader *bufio.Reader) {
-	switch code {
-	case 'C': // Right arrow
-		if i.cursorPos < len(i.buffer) {
-			i.cursorPos++
-			i.render()
-		}
-	case 'D': // Left arrow
-		if i.cursorPos > 0 {
-			i.cursorPos--
-			i.render()
-		}
-	case 'H': // Home
-		i.cursorPos = 0
-		i.render()
-	case 'F': // End
-		i.cursorPos = len(i.buffer)
-		i.render()
-	case '3': // Delete key (ESC [ 3 ~)
-		i.handleDeleteKey(reader)
+	if handler, ok := csiHandlers[code]; ok {
+		handler(i, reader)
 	}
+}
+
+func handleRightArrow(i *Input, _ *bufio.Reader) {
+	if i.cursorPos < len(i.buffer) {
+		i.cursorPos++
+		i.render()
+	}
+}
+
+func handleLeftArrow(i *Input, _ *bufio.Reader) {
+	if i.cursorPos > 0 {
+		i.cursorPos--
+		i.render()
+	}
+}
+
+func handleHome(i *Input, _ *bufio.Reader) {
+	i.cursorPos = 0
+	i.render()
+}
+
+func handleEnd(i *Input, _ *bufio.Reader) {
+	i.cursorPos = len(i.buffer)
+	i.render()
+}
+
+func handleDelete(i *Input, reader *bufio.Reader) {
+	i.handleDeleteKey(reader)
 }
 
 func (i *Input) handleDeleteKey(reader *bufio.Reader) {
