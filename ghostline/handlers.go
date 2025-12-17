@@ -96,6 +96,8 @@ func handleEscape(i *Input, reader *bufio.Reader) (string, action) {
 type csiHandler func(i *Input, reader *bufio.Reader)
 
 var csiHandlers = map[byte]csiHandler{
+	'A': handleUpArrow,
+	'B': handleDownArrow,
 	'C': handleRightArrow,
 	'D': handleLeftArrow,
 	'H': handleHome,
@@ -106,6 +108,24 @@ var csiHandlers = map[byte]csiHandler{
 func (i *Input) handleCSI(code byte, reader *bufio.Reader) {
 	if handler, ok := csiHandlers[code]; ok {
 		handler(i, reader)
+	}
+}
+
+func handleUpArrow(i *Input, _ *bufio.Reader) {
+	entry, ok := i.history.Previous(string(i.buffer))
+	if ok {
+		i.buffer = []rune(entry)
+		i.cursorPos = len(i.buffer)
+		i.render()
+	}
+}
+
+func handleDownArrow(i *Input, _ *bufio.Reader) {
+	entry, ok := i.history.Next()
+	if ok {
+		i.buffer = []rune(entry)
+		i.cursorPos = len(i.buffer)
+		i.render()
 	}
 }
 

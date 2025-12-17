@@ -15,7 +15,7 @@ func main() {
 	input := ghostline.NewInput(suggestions, nil, nil)
 
 	fmt.Println("Ghostline Demo")
-	fmt.Println("Type and see suggestions. Tab to accept. Ctrl+C to exit.")
+	fmt.Println("Tab=accept, ↑↓=history, Ctrl+D=exit")
 	fmt.Println()
 
 	for {
@@ -41,6 +41,7 @@ func main() {
 			break
 		}
 
+		input.AddHistory(line)
 		fmt.Printf("You typed: %q\n", line)
 	}
 }

@@ -37,6 +37,7 @@ type Input struct {
 	suggestions []string
 	prompt      string
 	handlers    map[rune]keyHandler
+	history     *History
 
 	in  io.Reader
 	out io.Writer
@@ -70,10 +71,17 @@ func NewInput(suggestions []string, in io.Reader, out io.Writer) *Input {
 	return &Input{
 		suggestions: suggestions,
 		handlers:    defaultHandlers(),
+		history:     NewHistory(),
 		in:          in,
 		out:         out,
 		fd:          int(os.Stdin.Fd()),
 	}
+}
+
+// AddHistory adds a line to the command history.
+// Empty lines and duplicates of the last entry are ignored.
+func (i *Input) AddHistory(line string) {
+	i.history.Add(line)
 }
 
 // Readline reads a line of input with interactive ghost text suggestions.
@@ -117,6 +125,7 @@ func (i *Input) Readline(prompt string) (string, error) {
 	i.prompt = prompt
 	i.buffer = []rune{}
 	i.cursorPos = 0
+	i.history.Reset("")
 
 	if err := i.enableRawMode(); err != nil {
 		return "", err
