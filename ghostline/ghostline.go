@@ -31,6 +31,10 @@ import (
 // Create instances using NewInput rather than constructing directly.
 //
 // The zero value is not usable; always use NewInput to create Input instances.
+//
+// Input is not safe for concurrent use. Each Input instance must be used by
+// a single goroutine only. If you need to read from multiple inputs
+// concurrently, create a separate Input instance per goroutine.
 type Input struct {
 	buffer      []rune
 	cursorPos   int
