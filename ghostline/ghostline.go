@@ -10,10 +10,11 @@
 //
 //	suggestions := []string{"help", "hello", "history", "exit"}
 //	input := ghostline.NewInput(suggestions, nil, nil)
-//	line, ok := input.Readline("$ ")
-//	if ok {
-//		fmt.Println("You entered:", line)
+//	line, err := input.Readline("$ ")
+//	if err != nil {
+//		// handle ErrInterrupted, ErrEOF, or other errors
 //	}
+//	fmt.Println("You entered:", line)
 package ghostline
 
 import (
@@ -76,7 +77,7 @@ func NewInput(suggestions []string, in io.Reader, out io.Writer) *Input {
 }
 
 // Readline reads a line of input with interactive ghost text suggestions.
-// Returns the entered text and true on success, or empty string and false if aborted.
+// Returns the entered text and nil on success, or an error if aborted.
 // Places the terminal in raw mode for the duration of input.
 //
 // Parameters:
@@ -86,29 +87,39 @@ func NewInput(suggestions []string, in io.Reader, out io.Writer) *Input {
 //   - Tab: accept the current ghost text suggestion
 //   - Enter: submit the current input
 //   - Backspace/Delete: remove the last character
-//   - Ctrl+C: abort input immediately
-//   - Ctrl+D: abort input when buffer is empty
-//
-// Returns false when the user aborts with Ctrl+C, Ctrl+D on empty input,
-// or when an I/O error occurs.
+//   - Ctrl+C: abort input (returns ErrInterrupted)
+//   - Ctrl+D: abort input when buffer is empty (returns ErrEOF)
 //
 // Example:
 //
 //	input := ghostline.NewInput([]string{"help", "history"}, nil, nil)
 //	for {
-//		line, ok := input.Readline(">>> ")
-//		if !ok {
+//		line, err := input.Readline(">>> ")
+//
+//		if err == ghostline.ErrInterrupted {
+//			fmt.Println("^C")
+//			continue
+//		}
+//
+//		if err == ghostline.ErrEOF {
+//			fmt.Println("Goodbye!")
 //			break
 //		}
+//
+//		if err != nil {
+//			fmt.Println("Error:", err)
+//			break
+//		}
+//
 //		fmt.Println("Command:", line)
 //	}
-func (i *Input) Readline(prompt string) (string, bool) {
+func (i *Input) Readline(prompt string) (string, error) {
 	i.prompt = prompt
 	i.buffer = []rune{}
 	i.cursorPos = 0
 
 	if err := i.enableRawMode(); err != nil {
-		return "", false
+		return "", err
 	}
 	defer i.disableRawMode()
 
@@ -118,15 +129,15 @@ func (i *Input) Readline(prompt string) (string, bool) {
 	for {
 		r, _, err := reader.ReadRune()
 		if err != nil {
-			return "", false
+			return "", err
 		}
 
 		if handler, exists := i.handlers[r]; exists {
 			result, act := handler(i, reader)
-			if act != actionContinue {
-				return result, act == actionSubmit
+			if act == actionContinue {
+				continue
 			}
-			continue
+			return result, actionErrors[act]
 		}
 
 		if unicode.IsPrint(r) {

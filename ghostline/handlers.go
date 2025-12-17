@@ -27,20 +27,27 @@ type action int
 const (
 	actionContinue action = iota
 	actionSubmit
-	actionAbort
+	actionInterrupted
+	actionEOF
 )
+
+var actionErrors = map[action]error{
+	actionSubmit:      nil,
+	actionInterrupted: ErrInterrupted,
+	actionEOF:         ErrEOF,
+}
 
 type keyHandler func(i *Input, reader *bufio.Reader) (string, action)
 
 func handleCtrlC(i *Input, reader *bufio.Reader) (string, action) {
 	i.buffer = nil
 	i.render()
-	return "", actionAbort
+	return "", actionInterrupted
 }
 
 func handleCtrlD(i *Input, reader *bufio.Reader) (string, action) {
 	if len(i.buffer) == 0 {
-		return "", actionAbort
+		return "", actionEOF
 	}
 	return "", actionContinue
 }

@@ -19,9 +19,20 @@ func main() {
 	fmt.Println()
 
 	for {
-		line, ok := input.Readline(">>> ")
-		if !ok {
+		line, err := input.Readline(">>> ")
+
+		if err == ghostline.ErrInterrupted {
+			fmt.Println("^C")
+			continue
+		}
+
+		if err == ghostline.ErrEOF {
 			fmt.Println("\nBye!")
+			break
+		}
+
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
 			break
 		}
 
