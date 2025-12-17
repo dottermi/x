@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Module (e.g., ghostline)'
+        required: true
+        type: string
+      version:
+        description: 'Version (e.g., v0.0.1)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      MODULE: ${{ inputs.module }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate module
+        run: |
+          if [ ! -f "$MODULE/go.mod" ]; then
+            echo "Error: Module $MODULE not found"
+            exit 1
+          fi
+
+      - name: Validate version
+        run: |
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be vX.Y.Z"
+            exit 1
+          fi
+
+      - name: Create tag
+        run: |
+          TAG="$MODULE/$VERSION"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.module }}/${{ inputs.version }}
+          name: ${{ inputs.module }} ${{ inputs.version }}
+          generate_release_notes: true
