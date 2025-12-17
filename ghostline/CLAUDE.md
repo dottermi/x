@@ -24,7 +24,6 @@ The library consists of a single `Input` struct that manages interactive input:
 - **suggestion.go** - `findGhost()` prefix matching against last word
 - **render.go** - ANSI escape codes for multiline rendering and cursor positioning
 - **terminal.go** - Raw mode using `golang.org/x/term`
-- **keys.go** - Key constants
 - **errors.go** - `ErrInterrupted` (Ctrl+C) and `ErrEOF` (Ctrl+D)
 
 ## Key Behaviors
