@@ -1,6 +1,6 @@
 # `./ghostline 👻`
 
-Readline library for Go with ghost text (inline suggestions).
+Minimal readline API with ghost text suggestions
 
 ## `features`
 
