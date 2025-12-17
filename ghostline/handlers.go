@@ -101,8 +101,6 @@ var csiHandlers = map[byte]csiHandler{
 	'B': handleDownArrow,
 	'C': handleRightArrow,
 	'D': handleLeftArrow,
-	'H': handleHome,
-	'F': handleEnd,
 	'3': handleDelete,
 }
 
@@ -203,16 +201,6 @@ func handleLeftArrow(i *Input, _ *bufio.Reader) {
 		i.cursorPos--
 		i.render()
 	}
-}
-
-func handleHome(i *Input, _ *bufio.Reader) {
-	i.cursorPos = 0
-	i.render()
-}
-
-func handleEnd(i *Input, _ *bufio.Reader) {
-	i.cursorPos = len(i.buffer)
-	i.render()
 }
 
 func handleDelete(i *Input, reader *bufio.Reader) {

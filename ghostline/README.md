@@ -67,7 +67,6 @@ func main() {
 | Ctrl+K   | Kill to end of line |
 | Ctrl+U   | Kill to beginning   |
 | Ctrl+W   | Delete word         |
-| Home/End | Buffer start/end    |
 | Delete   | Delete char         |
 
 ## `example`
