@@ -2,8 +2,6 @@ package ghostline
 
 import "strings"
 
-// findGhost returns the completion suffix for the last word in the buffer.
-// Returns empty string if no matching suggestion exists or buffer ends with space.
 func (i *Input) findGhost() string {
 	if len(i.buffer) == 0 {
 		return ""

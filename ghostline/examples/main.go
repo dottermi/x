@@ -8,14 +8,8 @@ import (
 
 func main() {
 	suggestions := []string{
-		"help",
-		"hello",
-		"history",
-		"exit",
-		"clear",
-		"config",
-		"commit",
-		"checkout",
+		"help", "hello", "history", "exit",
+		"clear", "config", "commit", "checkout",
 	}
 
 	input := ghostline.NewInput(suggestions, nil, nil)

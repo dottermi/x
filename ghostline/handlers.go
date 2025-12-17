@@ -41,8 +41,7 @@ func handleCtrlD(i *Input, reader *bufio.Reader) (string, action) {
 }
 
 func handleTab(i *Input, reader *bufio.Reader) (string, action) {
-	ghost := i.findGhost()
-	if ghost != "" {
+	if ghost := i.findGhost(); ghost != "" {
 		i.buffer = append(i.buffer, []rune(ghost)...)
 		i.render()
 	}
