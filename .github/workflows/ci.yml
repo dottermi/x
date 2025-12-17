@@ -88,11 +88,12 @@ jobs:
         with:
           go-version: "1.25"
 
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
       - name: Lint ${{ matrix.module }}
-        run: cd ${{ matrix.module }} && golangci-lint run -c ../.golangci.yml ./...
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.7.1
+          working-directory: ${{ matrix.module }}
+          args: -c ../.golangci.yml ./...
 
   vulncheck:
     needs: detect-changes
@@ -109,8 +110,7 @@ jobs:
         with:
           go-version: "1.25"
 
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
       - name: Vulncheck ${{ matrix.module }}
-        run: cd ${{ matrix.module }} && govulncheck ./...
+        uses: golang/govulncheck-action@v1
+        with:
+          work-dir: ${{ matrix.module }}
