@@ -46,6 +46,10 @@ type Input struct {
 	handlers    map[rune]keyHandler
 	history     *History
 
+	// Match cache to avoid recomputing on every render
+	cachedMatches    []string
+	cachedMatchesFor string // buffer state when cache was computed
+
 	in  io.Reader
 	out io.Writer
 

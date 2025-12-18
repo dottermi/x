@@ -150,10 +150,13 @@ func (i *Input) handleExtendedCSI(reader *bufio.Reader) {
 		return
 	}
 
-	mod, _ := reader.ReadByte() // modifier (5 = Ctrl)
-	dir, _ := reader.ReadByte() // direction
+	mod, err := reader.ReadByte()
+	if err != nil || mod != '5' {
+		return
+	}
 
-	if mod != '5' {
+	dir, err := reader.ReadByte()
+	if err != nil {
 		return
 	}
 
@@ -271,21 +274,16 @@ func (i *Input) findLineEndFrom(pos int) int {
 	return pos
 }
 
-// handleCtrlRight accepts the next word from ghost text or jumps forward a word.
-// At end of buffer: accepts partial ghost suggestion up to next word boundary.
-// Mid-buffer: moves cursor to start of next word.
 // findNextWordEnd returns the end position of the first word in text.
 // Returns 0 if no word boundary is found.
 func findNextWordEnd(text string) int {
 	inWord := false
 	for idx, r := range text {
-		isSpace := r == ' ' || r == '\t'
-
-		if isSpace && inWord {
+		if isBreakChar(r) && inWord {
 			return idx
 		}
 
-		if !isSpace {
+		if !isBreakChar(r) {
 			inWord = true
 		}
 	}
@@ -324,18 +322,21 @@ func (i *Input) moveCursorToNextWord() {
 	pos := i.cursorPos
 
 	// Skip current word
-	for pos < len(i.buffer) && i.buffer[pos] != ' ' {
+	for pos < len(i.buffer) && !isBreakChar(i.buffer[pos]) {
 		pos++
 	}
 
-	// Skip spaces
-	for pos < len(i.buffer) && i.buffer[pos] == ' ' {
+	// Skip break characters
+	for pos < len(i.buffer) && isBreakChar(i.buffer[pos]) {
 		pos++
 	}
 
 	i.cursorPos = pos
 }
 
+// handleCtrlRight accepts the next word from ghost text or jumps forward a word.
+// At end of buffer: accepts partial ghost suggestion up to next word boundary.
+// Mid-buffer: moves cursor to start of next word.
 func handleCtrlRight(i *Input, _ *bufio.Reader) {
 	if i.cursorPos == len(i.buffer) {
 		i.acceptNextGhostWord()
@@ -348,16 +349,18 @@ func handleCtrlRight(i *Input, _ *bufio.Reader) {
 
 // handleCtrlLeft moves cursor backward to the start of the previous word.
 func handleCtrlLeft(i *Input, _ *bufio.Reader) {
-	// Move cursor to start of previous word
 	pos := i.cursorPos
-	// Skip spaces before cursor
-	for pos > 0 && i.buffer[pos-1] == ' ' {
+
+	// Skip break characters before cursor
+	for pos > 0 && isBreakChar(i.buffer[pos-1]) {
 		pos--
 	}
+
 	// Skip word
-	for pos > 0 && i.buffer[pos-1] != ' ' {
+	for pos > 0 && !isBreakChar(i.buffer[pos-1]) {
 		pos--
 	}
+
 	i.cursorPos = pos
 	i.render()
 }

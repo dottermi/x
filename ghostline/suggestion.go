@@ -9,6 +9,11 @@ import (
 // Inspired by rustyline's default break characters.
 const breakChars = " \t\n\"'`@$><;|&{}()[],.:;"
 
+// isBreakChar returns true if r is a word boundary character.
+func isBreakChar(r rune) bool {
+	return strings.ContainsRune(breakChars, r)
+}
+
 // extractLastWord returns the final word from text for suggestion matching.
 // Scans backward from the end until a break character is found.
 // Returns the entire text if no break character exists.
@@ -37,13 +42,23 @@ type scoredMatch struct {
 // Combines prefix matching and fuzzy matching, sorted by relevance.
 // Prefix matches appear first, followed by fuzzy matches sorted by score.
 // Returns nil if the buffer is empty or no matches are found.
+// Results are cached to avoid recomputation on every render.
 func (i *Input) getMatches() []string {
 	if len(i.buffer) == 0 {
 		return nil
 	}
 
-	lastWord := extractLastWord(string(i.buffer))
+	bufferStr := string(i.buffer)
+
+	// Return cached result if buffer hasn't changed
+	if i.cachedMatchesFor == bufferStr {
+		return i.cachedMatches
+	}
+
+	lastWord := extractLastWord(bufferStr)
 	if lastWord == "" {
+		i.cachedMatchesFor = bufferStr
+		i.cachedMatches = nil
 		return nil
 	}
 
@@ -63,6 +78,8 @@ func (i *Input) getMatches() []string {
 	}
 
 	if len(matches) == 0 {
+		i.cachedMatchesFor = bufferStr
+		i.cachedMatches = nil
 		return nil
 	}
 
@@ -84,6 +101,8 @@ func (i *Input) getMatches() []string {
 		result[idx] = m.text
 	}
 
+	i.cachedMatchesFor = bufferStr
+	i.cachedMatches = result
 	return result
 }
 
@@ -120,8 +139,11 @@ func (i *Input) findGhost() string {
 	}
 
 	match := i.findMatch()
-	if match == "" || len(match) <= len(lastWord) {
+	lastWordRunes := []rune(lastWord)
+	matchRunes := []rune(match)
+
+	if match == "" || len(matchRunes) <= len(lastWordRunes) {
 		return ""
 	}
-	return match[len(lastWord):]
+	return string(matchRunes[len(lastWordRunes):])
 }
