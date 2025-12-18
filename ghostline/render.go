@@ -50,10 +50,12 @@ func (i *Input) render() {
 		_, _ = fmt.Fprintf(i.out, "\033[38;2;107;114;128m%s\033[0m", ghost)
 	}
 
-	// Show match counter if multiple matches (color: #4b5563 - darker gray)
+	// Show match counter with prev/next hints if multiple matches (color: #4b5563 - darker gray)
 	if matchCount > 1 {
 		currentIdx := i.currentMatchIndex()
-		_, _ = fmt.Fprintf(i.out, "\033[38;2;75;85;99m (%d/%d)\033[0m", currentIdx, matchCount)
+		prevMatch, nextMatch := i.getPrevNextMatches()
+		_, _ = fmt.Fprintf(i.out, "\033[38;2;75;85;99m [%d/%d • ↑ %s  ↓ %s]\033[0m",
+			currentIdx, matchCount, prevMatch, nextMatch)
 	}
 
 	// Position cursor correctly

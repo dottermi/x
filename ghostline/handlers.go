@@ -55,18 +55,8 @@ func handleCtrlD(i *Input, reader *bufio.Reader) (string, action) {
 
 func handleTab(i *Input, reader *bufio.Reader) (string, action) {
 	if i.cursorPos == len(i.buffer) {
-		matches := i.getMatches()
-		if len(matches) == 0 {
-			return "", actionContinue
-		}
-
-		if len(matches) > 1 {
-			// Cycle to next match
-			i.matchIndex = (i.matchIndex + 1) % len(matches)
-			i.render()
-		} else {
-			// Single match: accept it
-			match := matches[0]
+		if match := i.findMatch(); match != "" {
+			// Accept current suggestion
 			start := i.lastWordStart()
 			i.buffer = append(i.buffer[:start], []rune(match)...)
 			i.cursorPos = len(i.buffer)
@@ -78,7 +68,8 @@ func handleTab(i *Input, reader *bufio.Reader) (string, action) {
 }
 
 func handleEnter(i *Input, reader *bufio.Reader) (string, action) {
-	_, _ = fmt.Fprintln(i.out)
+	// Move cursor to column 1, then to next line
+	_, _ = fmt.Fprint(i.out, "\r\n")
 	return string(i.buffer), actionSubmit
 }
 
@@ -115,17 +106,47 @@ var csiHandlers = map[byte]csiHandler{
 	'B': handleDownArrow,
 	'C': handleRightArrow,
 	'D': handleLeftArrow,
-	'Z': handleShiftTab,
 	'3': handleDelete,
 }
 
 func (i *Input) handleCSI(code byte, reader *bufio.Reader) {
+	// Handle extended sequences like ESC [ 1 ; 5 C (Ctrl+Right)
+	if code == '1' {
+		b2, err := reader.ReadByte()
+		if err != nil {
+			return
+		}
+		if b2 == ';' {
+			mod, _ := reader.ReadByte() // modifier (5 = Ctrl)
+			dir, _ := reader.ReadByte() // direction
+			if mod == '5' && dir == 'C' {
+				handleCtrlRight(i, reader)
+				return
+			}
+			if mod == '5' && dir == 'D' {
+				handleCtrlLeft(i, reader)
+				return
+			}
+		}
+		return
+	}
+
 	if handler, ok := csiHandlers[code]; ok {
 		handler(i, reader)
 	}
 }
 
 func handleUpArrow(i *Input, _ *bufio.Reader) {
+	// At end of buffer with multiple matches: cycle suggestions
+	if i.cursorPos == len(i.buffer) {
+		matches := i.getMatches()
+		if len(matches) > 1 {
+			i.matchIndex = (i.matchIndex - 1 + len(matches)) % len(matches)
+			i.render()
+			return
+		}
+	}
+
 	// Find current line start and check if we're on first line
 	lineStart := i.findLineStart()
 	if lineStart == 0 {
@@ -134,6 +155,7 @@ func handleUpArrow(i *Input, _ *bufio.Reader) {
 		if ok {
 			i.buffer = []rune(entry)
 			i.cursorPos = len(i.buffer)
+			i.matchIndex = 0
 			i.render()
 		}
 		return
@@ -154,6 +176,16 @@ func handleUpArrow(i *Input, _ *bufio.Reader) {
 }
 
 func handleDownArrow(i *Input, _ *bufio.Reader) {
+	// At end of buffer with multiple matches: cycle suggestions
+	if i.cursorPos == len(i.buffer) {
+		matches := i.getMatches()
+		if len(matches) > 1 {
+			i.matchIndex = (i.matchIndex + 1) % len(matches)
+			i.render()
+			return
+		}
+	}
+
 	// Find current line end and check if we're on last line
 	lineEnd := i.findLineEnd()
 	if lineEnd == len(i.buffer) {
@@ -162,6 +194,7 @@ func handleDownArrow(i *Input, _ *bufio.Reader) {
 		if ok {
 			i.buffer = []rune(entry)
 			i.cursorPos = len(i.buffer)
+			i.matchIndex = 0
 			i.render()
 		}
 		return
@@ -204,15 +237,69 @@ func (i *Input) findLineEndFrom(pos int) int {
 	return pos
 }
 
-func handleShiftTab(i *Input, _ *bufio.Reader) {
+func handleCtrlRight(i *Input, _ *bufio.Reader) {
 	if i.cursorPos == len(i.buffer) {
-		matches := i.getMatches()
-		if len(matches) > 1 {
-			// Cycle to previous match
-			i.matchIndex = (i.matchIndex - 1 + len(matches)) % len(matches)
+		// At end: accept next word from ghost
+		ghost := i.findGhost()
+		if ghost == "" {
+			return
+		}
+		// Find end of next word in ghost
+		wordEnd := 0
+		inWord := false
+		for idx, r := range ghost {
+			if r == ' ' || r == '\t' {
+				if inWord {
+					wordEnd = idx
+					break
+				}
+			} else {
+				inWord = true
+				wordEnd = idx + 1
+			}
+		}
+		if wordEnd > 0 {
+			match := i.findMatch()
+			text := string(i.buffer)
+			lastWord := extractLastWord(text)
+			// Accept lastWord + partial ghost
+			accepted := match[:len(lastWord)+wordEnd]
+			start := i.lastWordStart()
+			i.buffer = append(i.buffer[:start], []rune(accepted)...)
+			i.cursorPos = len(i.buffer)
+			i.matchIndex = 0
 			i.render()
 		}
+		return
 	}
+
+	// Move cursor to end of next word
+	pos := i.cursorPos
+	// Skip current word
+	for pos < len(i.buffer) && i.buffer[pos] != ' ' {
+		pos++
+	}
+	// Skip spaces
+	for pos < len(i.buffer) && i.buffer[pos] == ' ' {
+		pos++
+	}
+	i.cursorPos = pos
+	i.render()
+}
+
+func handleCtrlLeft(i *Input, _ *bufio.Reader) {
+	// Move cursor to start of previous word
+	pos := i.cursorPos
+	// Skip spaces before cursor
+	for pos > 0 && i.buffer[pos-1] == ' ' {
+		pos--
+	}
+	// Skip word
+	for pos > 0 && i.buffer[pos-1] != ' ' {
+		pos--
+	}
+	i.cursorPos = pos
+	i.render()
 }
 
 func handleRightArrow(i *Input, _ *bufio.Reader) {
