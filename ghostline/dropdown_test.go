@@ -127,46 +127,49 @@ func TestGetPrevNextMatches(t *testing.T) {
 	t.Run("returns prev and next matches", func(t *testing.T) {
 		t.Parallel()
 
+		// Order by score: help, hero, hello
 		input := &Input{
 			buffer:      []rune("he"),
 			suggestions: []string{"hello", "help", "hero"},
-			matchIndex:  1, // current is "help"
-		}
-
-		prev, next := input.getPrevNextMatches()
-
-		assert.Equal(t, "hello", prev)
-		assert.Equal(t, "hero", next)
-	})
-
-	t.Run("wraps around at start", func(t *testing.T) {
-		t.Parallel()
-
-		input := &Input{
-			buffer:      []rune("he"),
-			suggestions: []string{"hello", "help", "hero"},
-			matchIndex:  0, // current is "hello"
-		}
-
-		prev, next := input.getPrevNextMatches()
-
-		assert.Equal(t, "hero", prev) // wraps to last
-		assert.Equal(t, "help", next)
-	})
-
-	t.Run("wraps around at end", func(t *testing.T) {
-		t.Parallel()
-
-		input := &Input{
-			buffer:      []rune("he"),
-			suggestions: []string{"hello", "help", "hero"},
-			matchIndex:  2, // current is "hero"
+			matchIndex:  1, // current is "hero"
 		}
 
 		prev, next := input.getPrevNextMatches()
 
 		assert.Equal(t, "help", prev)
-		assert.Equal(t, "hello", next) // wraps to first
+		assert.Equal(t, "hello", next)
+	})
+
+	t.Run("wraps around at start", func(t *testing.T) {
+		t.Parallel()
+
+		// Order by score: help, hero, hello
+		input := &Input{
+			buffer:      []rune("he"),
+			suggestions: []string{"hello", "help", "hero"},
+			matchIndex:  0, // current is "help"
+		}
+
+		prev, next := input.getPrevNextMatches()
+
+		assert.Equal(t, "hello", prev) // wraps to last
+		assert.Equal(t, "hero", next)
+	})
+
+	t.Run("wraps around at end", func(t *testing.T) {
+		t.Parallel()
+
+		// Order by score: help, hero, hello
+		input := &Input{
+			buffer:      []rune("he"),
+			suggestions: []string{"hello", "help", "hero"},
+			matchIndex:  2, // current is "hello"
+		}
+
+		prev, next := input.getPrevNextMatches()
+
+		assert.Equal(t, "hero", prev)
+		assert.Equal(t, "help", next) // wraps to first
 	})
 
 	t.Run("returns empty for single match", func(t *testing.T) {
@@ -205,20 +208,21 @@ func TestRenderDropdown(t *testing.T) {
 	t.Run("renders dropdown with multiple matches", func(t *testing.T) {
 		t.Parallel()
 
+		// Order by score: help, hero, hello
 		var buf bytes.Buffer
 		input := &Input{
 			out:         &buf,
 			buffer:      []rune("he"),
 			suggestions: []string{"hello", "help", "hero"},
-			matchIndex:  0,
+			matchIndex:  0, // current is "help"
 		}
 
 		input.renderDropdown()
 
 		output := buf.String()
 		assert.Contains(t, output, "[1/3")
-		assert.Contains(t, output, "hero")  // prev (wraps)
-		assert.Contains(t, output, "help")  // next
+		assert.Contains(t, output, "hello") // prev (wraps to last)
+		assert.Contains(t, output, "hero")  // next
 	})
 
 	t.Run("does not render for single match", func(t *testing.T) {

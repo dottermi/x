@@ -1,6 +1,9 @@
 package ghostline
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // breakChars defines word boundary characters inspired by rustyline.
 // These characters separate "words" for suggestion matching.
@@ -16,7 +19,14 @@ func extractLastWord(text string) string {
 	return text[lastIdx+1:]
 }
 
+// scoredMatch holds a suggestion and its match score.
+type scoredMatch struct {
+	text  string
+	score int
+}
+
 // getMatches returns all suggestions that match the last word.
+// Prefix matches come first, then fuzzy matches, all sorted by score.
 func (i *Input) getMatches() []string {
 	if len(i.buffer) == 0 {
 		return nil
@@ -28,15 +38,42 @@ func (i *Input) getMatches() []string {
 		return nil
 	}
 
-	var matches []string
-	lastWordLower := strings.ToLower(lastWord)
+	var prefixMatches, fuzzyMatches []scoredMatch
+
 	for _, s := range i.suggestions {
-		sLower := strings.ToLower(s)
-		if strings.HasPrefix(sLower, lastWordLower) {
-			matches = append(matches, s)
+		if prefixMatch(lastWord, s) {
+			prefixMatches = append(prefixMatches, scoredMatch{s, fuzzyScore(lastWord, s)})
+			continue
+		}
+
+		if score := fuzzyScore(lastWord, s); score >= 0 {
+			fuzzyMatches = append(fuzzyMatches, scoredMatch{s, score})
 		}
 	}
-	return matches
+
+	// Sort by score descending
+	sort.Slice(prefixMatches, func(i, j int) bool {
+		return prefixMatches[i].score > prefixMatches[j].score
+	})
+	sort.Slice(fuzzyMatches, func(i, j int) bool {
+		return fuzzyMatches[i].score > fuzzyMatches[j].score
+	})
+
+	// No matches
+	if len(prefixMatches) == 0 && len(fuzzyMatches) == 0 {
+		return nil
+	}
+
+	// Extract strings
+	result := make([]string, 0, len(prefixMatches)+len(fuzzyMatches))
+	for _, m := range prefixMatches {
+		result = append(result, m.text)
+	}
+	for _, m := range fuzzyMatches {
+		result = append(result, m.text)
+	}
+
+	return result
 }
 
 // findMatch returns the current matching suggestion based on matchIndex.

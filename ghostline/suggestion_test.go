@@ -47,7 +47,8 @@ func TestFindMatch(t *testing.T) {
 
 		match := input.findMatch()
 
-		assert.Equal(t, "hello", match)
+		// "help" scores higher (shorter)
+		assert.Equal(t, "help", match)
 	})
 
 	t.Run("case insensitive returns suggestion with original case", func(t *testing.T) {
@@ -127,7 +128,7 @@ func TestLastWordStart(t *testing.T) {
 func TestGetMatches(t *testing.T) {
 	t.Parallel()
 
-	t.Run("returns all matching suggestions", func(t *testing.T) {
+	t.Run("returns all matching suggestions sorted by score", func(t *testing.T) {
 		t.Parallel()
 
 		input := &Input{
@@ -137,7 +138,8 @@ func TestGetMatches(t *testing.T) {
 
 		matches := input.getMatches()
 
-		assert.Equal(t, []string{"hello", "help", "hero"}, matches)
+		// Shorter strings score higher (help, hero before hello)
+		assert.Equal(t, []string{"help", "hero", "hello"}, matches)
 	})
 
 	t.Run("case insensitive", func(t *testing.T) {
@@ -165,6 +167,33 @@ func TestGetMatches(t *testing.T) {
 
 		assert.Nil(t, matches)
 	})
+
+	t.Run("fuzzy matches after prefix matches", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("gco"),
+			suggestions: []string{"git checkout", "gco-tool", "get config"},
+		}
+
+		matches := input.getMatches()
+
+		// gco-tool is prefix match (first), then fuzzy sorted by score
+		assert.Equal(t, []string{"gco-tool", "get config", "git checkout"}, matches)
+	})
+
+	t.Run("fuzzy match finds subsequence", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("mkdr"),
+			suggestions: []string{"mkdir", "rmdir", "make"},
+		}
+
+		matches := input.getMatches()
+
+		assert.Equal(t, []string{"mkdir"}, matches)
+	})
 }
 
 func TestFindGhost(t *testing.T) {
@@ -180,7 +209,8 @@ func TestFindGhost(t *testing.T) {
 
 		ghost := input.findGhost()
 
-		assert.Equal(t, "lo", ghost)
+		// "help" scores higher (shorter), so ghost is "p"
+		assert.Equal(t, "p", ghost)
 	})
 
 	t.Run("returns empty for no match", func(t *testing.T) {
@@ -235,7 +265,7 @@ func TestFindGhost(t *testing.T) {
 		assert.Equal(t, "mit", ghost)
 	})
 
-	t.Run("returns first match", func(t *testing.T) {
+	t.Run("returns highest scored match", func(t *testing.T) {
 		t.Parallel()
 
 		input := &Input{
@@ -245,7 +275,8 @@ func TestFindGhost(t *testing.T) {
 
 		ghost := input.findGhost()
 
-		assert.Equal(t, "llo", ghost)
+		// "help" and "hero" score higher (shorter), "help" comes first alphabetically
+		assert.Equal(t, "lp", ghost)
 	})
 
 	t.Run("exact match returns empty", func(t *testing.T) {

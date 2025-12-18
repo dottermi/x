@@ -39,7 +39,7 @@ type Input struct {
 	buffer      []rune
 	cursorPos   int
 	suggestions []string
-	matchIndex  int    // current match index for Tab cycling
+	matchIndex  int // current match index for Tab cycling
 	prompt      string
 	contPrompt  string // continuation prompt for multiline
 	prevLines   int    // previous line count for clearing
