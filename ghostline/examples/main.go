@@ -6,6 +6,11 @@ import (
 	"github.com/termisquad/x/ghostline"
 )
 
+// arrowWithStyle returns a colored prompt arrow (cyan).
+func arrowWithStyle() string {
+	return "\033[36m>>>\033[0m "
+}
+
 func main() {
 	suggestions := []string{
 		"Class(",
@@ -31,7 +36,7 @@ func main() {
 	fmt.Println()
 
 	for {
-		line, err := input.Readline(">>> ")
+		line, err := input.Readline(arrowWithStyle())
 
 		if err == ghostline.ErrInterrupted {
 			fmt.Println("^C")
