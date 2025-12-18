@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/termisquad/x/ghostline"
+	"github.com/dottermi/x/ghostline"
 )
 
 // arrowWithStyle returns a colored prompt arrow (cyan).

@@ -1,4 +1,4 @@
-module github.com/termisquad/x/ghostline
+module github.com/dottermi/x/ghostline
 
 go 1.25.1
 
