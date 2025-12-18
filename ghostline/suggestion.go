@@ -57,34 +57,6 @@ func (i *Input) lastWordStart() int {
 	return len(i.buffer) - len([]rune(lastWord))
 }
 
-// countMatches returns the number of suggestions that match the last word.
-func (i *Input) countMatches() int {
-	return len(i.getMatches())
-}
-
-// currentMatchIndex returns the 1-based index of the current match for display.
-func (i *Input) currentMatchIndex() int {
-	matches := i.getMatches()
-	if len(matches) == 0 {
-		return 0
-	}
-	return (i.matchIndex % len(matches)) + 1
-}
-
-// getPrevNextMatches returns the previous and next match names for display hints.
-func (i *Input) getPrevNextMatches() (prev, next string) {
-	matches := i.getMatches()
-	if len(matches) < 2 {
-		return "", ""
-	}
-
-	idx := i.matchIndex % len(matches)
-	prevIdx := (idx - 1 + len(matches)) % len(matches)
-	nextIdx := (idx + 1) % len(matches)
-
-	return matches[prevIdx], matches[nextIdx]
-}
-
 func (i *Input) findGhost() string {
 	text := string(i.buffer)
 	lastWord := extractLastWord(text)
