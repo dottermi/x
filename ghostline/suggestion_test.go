@@ -34,6 +34,96 @@ func TestExtractLastWord(t *testing.T) {
 	}
 }
 
+func TestFindMatch(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns full suggestion for matching prefix", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("hel"),
+			suggestions: []string{"hello", "help"},
+		}
+
+		match := input.findMatch()
+
+		assert.Equal(t, "hello", match)
+	})
+
+	t.Run("case insensitive returns suggestion with original case", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("class"),
+			suggestions: []string{"Class", "CLASSIC"},
+		}
+
+		match := input.findMatch()
+
+		assert.Equal(t, "Class", match)
+	})
+
+	t.Run("returns exact match", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("hello"),
+			suggestions: []string{"hello"},
+		}
+
+		match := input.findMatch()
+
+		assert.Equal(t, "hello", match)
+	})
+
+	t.Run("returns empty for no match", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("xyz"),
+			suggestions: []string{"hello"},
+		}
+
+		match := input.findMatch()
+
+		assert.Empty(t, match)
+	})
+}
+
+func TestLastWordStart(t *testing.T) {
+	t.Parallel()
+
+	t.Run("single word", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{buffer: []rune("hello")}
+
+		start := input.lastWordStart()
+
+		assert.Equal(t, 0, start)
+	})
+
+	t.Run("after space", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{buffer: []rune("git com")}
+
+		start := input.lastWordStart()
+
+		assert.Equal(t, 4, start)
+	})
+
+	t.Run("after delimiter", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{buffer: []rune("Class(tex")}
+
+		start := input.lastWordStart()
+
+		assert.Equal(t, 6, start)
+	})
+}
+
 func TestFindGhost(t *testing.T) {
 	t.Parallel()
 
@@ -128,7 +218,7 @@ func TestFindGhost(t *testing.T) {
 		assert.Empty(t, ghost)
 	})
 
-	t.Run("case sensitive matching", func(t *testing.T) {
+	t.Run("case insensitive matching", func(t *testing.T) {
 		t.Parallel()
 
 		input := &Input{
@@ -138,7 +228,7 @@ func TestFindGhost(t *testing.T) {
 
 		ghost := input.findGhost()
 
-		assert.Equal(t, "LO", ghost)
+		assert.Equal(t, "lo", ghost)
 	})
 
 	t.Run("matches after open paren", func(t *testing.T) {

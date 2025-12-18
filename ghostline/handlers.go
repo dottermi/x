@@ -55,8 +55,10 @@ func handleCtrlD(i *Input, reader *bufio.Reader) (string, action) {
 
 func handleTab(i *Input, reader *bufio.Reader) (string, action) {
 	if i.cursorPos == len(i.buffer) {
-		if ghost := i.findGhost(); ghost != "" {
-			i.buffer = append(i.buffer, []rune(ghost)...)
+		if match := i.findMatch(); match != "" {
+			// Replace last word with the full match (preserves suggestion's case)
+			start := i.lastWordStart()
+			i.buffer = append(i.buffer[:start], []rune(match)...)
 			i.cursorPos = len(i.buffer)
 			i.render()
 		}

@@ -16,6 +16,36 @@ func extractLastWord(text string) string {
 	return text[lastIdx+1:]
 }
 
+// findMatch returns the full matching suggestion for the last word.
+// Used by handleTab to replace the typed word with the correct case.
+func (i *Input) findMatch() string {
+	if len(i.buffer) == 0 {
+		return ""
+	}
+
+	text := string(i.buffer)
+	lastWord := extractLastWord(text)
+	if lastWord == "" {
+		return ""
+	}
+
+	lastWordLower := strings.ToLower(lastWord)
+	for _, s := range i.suggestions {
+		sLower := strings.ToLower(s)
+		if strings.HasPrefix(sLower, lastWordLower) && len(s) >= len(lastWord) {
+			return s
+		}
+	}
+	return ""
+}
+
+// lastWordStart returns the position where the last word starts in the buffer.
+func (i *Input) lastWordStart() int {
+	text := string(i.buffer)
+	lastWord := extractLastWord(text)
+	return len(i.buffer) - len([]rune(lastWord))
+}
+
 func (i *Input) findGhost() string {
 	if len(i.buffer) == 0 {
 		return ""
@@ -27,8 +57,10 @@ func (i *Input) findGhost() string {
 		return ""
 	}
 
+	lastWordLower := strings.ToLower(lastWord)
 	for _, s := range i.suggestions {
-		if strings.HasPrefix(s, lastWord) && len(s) > len(lastWord) {
+		sLower := strings.ToLower(s)
+		if strings.HasPrefix(sLower, lastWordLower) && len(s) > len(lastWord) {
 			return s[len(lastWord):]
 		}
 	}
