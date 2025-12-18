@@ -127,28 +127,37 @@ var csiHandlers = map[byte]csiHandler{
 // handleCSI dispatches CSI escape sequences to specific handlers.
 // Handles both simple sequences (ESC [ A) and extended ones (ESC [ 1 ; 5 C).
 func (i *Input) handleCSI(code byte, reader *bufio.Reader) {
-	// Handle extended sequences like ESC [ 1 ; 5 C (Ctrl+Right)
 	if code == '1' {
-		b2, err := reader.ReadByte()
-		if err != nil {
-			return
-		}
-		if b2 == ';' {
-			mod, _ := reader.ReadByte() // modifier (5 = Ctrl)
-			dir, _ := reader.ReadByte() // direction
-			if mod == '5' && dir == 'C' {
-				handleCtrlRight(i, reader)
-				return
-			}
-			if mod == '5' && dir == 'D' {
-				handleCtrlLeft(i, reader)
-				return
-			}
-		}
+		i.handleExtendedCSI(reader)
 		return
 	}
 
 	if handler, ok := csiHandlers[code]; ok {
+		handler(i, reader)
+	}
+}
+
+// ctrlArrowHandlers maps direction codes to Ctrl+Arrow handlers.
+var ctrlArrowHandlers = map[byte]func(*Input, *bufio.Reader){
+	'C': handleCtrlRight,
+	'D': handleCtrlLeft,
+}
+
+// handleExtendedCSI handles extended CSI sequences like ESC [ 1 ; 5 C (Ctrl+Arrow).
+func (i *Input) handleExtendedCSI(reader *bufio.Reader) {
+	b, err := reader.ReadByte()
+	if err != nil || b != ';' {
+		return
+	}
+
+	mod, _ := reader.ReadByte() // modifier (5 = Ctrl)
+	dir, _ := reader.ReadByte() // direction
+
+	if mod != '5' {
+		return
+	}
+
+	if handler, ok := ctrlArrowHandlers[dir]; ok {
 		handler(i, reader)
 	}
 }
@@ -265,53 +274,75 @@ func (i *Input) findLineEndFrom(pos int) int {
 // handleCtrlRight accepts the next word from ghost text or jumps forward a word.
 // At end of buffer: accepts partial ghost suggestion up to next word boundary.
 // Mid-buffer: moves cursor to start of next word.
-func handleCtrlRight(i *Input, _ *bufio.Reader) {
-	if i.cursorPos == len(i.buffer) {
-		// At end: accept next word from ghost
-		ghost := i.findGhost()
-		if ghost == "" {
-			return
+// findNextWordEnd returns the end position of the first word in text.
+// Returns 0 if no word boundary is found.
+func findNextWordEnd(text string) int {
+	inWord := false
+	for idx, r := range text {
+		isSpace := r == ' ' || r == '\t'
+
+		if isSpace && inWord {
+			return idx
 		}
-		// Find end of next word in ghost
-		wordEnd := 0
-		inWord := false
-		for idx, r := range ghost {
-			if r == ' ' || r == '\t' {
-				if inWord {
-					wordEnd = idx
-					break
-				}
-			} else {
-				inWord = true
-				wordEnd = idx + 1
-			}
+
+		if !isSpace {
+			inWord = true
 		}
-		if wordEnd > 0 {
-			match := i.findMatch()
-			text := string(i.buffer)
-			lastWord := extractLastWord(text)
-			// Accept lastWord + partial ghost
-			accepted := match[:len(lastWord)+wordEnd]
-			start := i.lastWordStart()
-			i.buffer = append(i.buffer[:start], []rune(accepted)...)
-			i.cursorPos = len(i.buffer)
-			i.matchIndex = 0
-			i.render()
-		}
+	}
+
+	if inWord {
+		return len(text)
+	}
+	return 0
+}
+
+// acceptNextGhostWord accepts the next word from ghost text into the buffer.
+func (i *Input) acceptNextGhostWord() {
+	ghost := i.findGhost()
+	if ghost == "" {
 		return
 	}
 
-	// Move cursor to end of next word
+	wordEnd := findNextWordEnd(ghost)
+	if wordEnd == 0 {
+		return
+	}
+
+	match := i.findMatch()
+	lastWord := extractLastWord(string(i.buffer))
+	accepted := match[:len(lastWord)+wordEnd]
+	start := i.lastWordStart()
+
+	i.buffer = append(i.buffer[:start], []rune(accepted)...)
+	i.cursorPos = len(i.buffer)
+	i.matchIndex = 0
+	i.render()
+}
+
+// moveCursorToNextWord moves cursor to the start of the next word.
+func (i *Input) moveCursorToNextWord() {
 	pos := i.cursorPos
+
 	// Skip current word
 	for pos < len(i.buffer) && i.buffer[pos] != ' ' {
 		pos++
 	}
+
 	// Skip spaces
 	for pos < len(i.buffer) && i.buffer[pos] == ' ' {
 		pos++
 	}
+
 	i.cursorPos = pos
+}
+
+func handleCtrlRight(i *Input, _ *bufio.Reader) {
+	if i.cursorPos == len(i.buffer) {
+		i.acceptNextGhostWord()
+		return
+	}
+
+	i.moveCursorToNextWord()
 	i.render()
 }
 

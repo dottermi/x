@@ -19,59 +19,60 @@ import "strings"
 //	fuzzyScore("gc", "git-checkout")  // positive score (matches g...c)
 //	fuzzyScore("xyz", "hello")        // returns -1 (no match)
 func fuzzyScore(pattern, text string) int {
-	pattern = strings.ToLower(pattern)
-	text = strings.ToLower(text)
-
 	if len(pattern) == 0 {
 		return 0
 	}
 
-	score := 0
-	pi := 0
-	consecutive := 0
-	prevMatchIdx := -1
+	pRunes := []rune(strings.ToLower(pattern))
+	tRunes := []rune(strings.ToLower(text))
 
-	for i, char := range text {
-		if pi < len(pattern) && char == rune(pattern[pi]) {
-			pi++
-			consecutive++
+	score, pIdx, prevMatchIdx, consecutive := 0, 0, -1, 0
 
-			// Bonus: match at start
-			if i == 0 {
-				score += 10
-			}
-
-			// Bonus: consecutive matches
-			if consecutive > 1 {
-				score += 5 * consecutive
-			}
-
-			// Bonus: match after separator (space, -, _)
-			if i > 0 {
-				prev := rune(text[i-1])
-				if prev == ' ' || prev == '-' || prev == '_' {
-					score += 8
-				}
-			}
-
-			// Penalty: gap between matches
-			if prevMatchIdx >= 0 {
-				gap := i - prevMatchIdx - 1
-				score -= gap
-			}
-
-			prevMatchIdx = i
-		} else {
+	for tIdx, char := range tRunes {
+		if pIdx >= len(pRunes) || char != pRunes[pIdx] {
 			consecutive = 0
+			continue
+		}
+
+		score += calculateMatchBonus(tIdx, prevMatchIdx, consecutive, tRunes)
+
+		consecutive++
+		prevMatchIdx = tIdx
+		pIdx++
+	}
+
+	if pIdx < len(pRunes) {
+		return -1
+	}
+
+	return score + (50 - len(tRunes))
+}
+
+// calculateMatchBonus computes the bonus score for a matched character.
+// Bonuses are awarded for matches at the start, consecutive matches,
+// and matches after word separators. Penalties are applied for gaps.
+func calculateMatchBonus(tIdx, prevMatchIdx, consecutive int, tRunes []rune) int {
+	bonus := 0
+
+	if tIdx == 0 {
+		bonus += 10
+	}
+
+	if consecutive > 0 {
+		bonus += 5 * (consecutive + 1)
+	}
+
+	if tIdx > 0 {
+		prev := tRunes[tIdx-1]
+		if prev == ' ' || prev == '-' || prev == '_' {
+			bonus += 8
 		}
 	}
 
-	if pi < len(pattern) {
-		return -1 // no match
+	if prevMatchIdx >= 0 {
+		gap := tIdx - prevMatchIdx - 1
+		bonus -= gap
 	}
 
-	// Bonus: shorter text = more relevant
-	score += 50 - len(text)
-
-	return score
+	return bonus
 }
