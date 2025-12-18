@@ -61,7 +61,7 @@ func (i *Input) render() {
 		prompt = i.contPrompt
 	}
 	col := runewidth.StringWidth(prompt) + cursorCol
-	_, _ = fmt.Fprintf(i.out, "\033[%dG", col+1) // \033[nG is 1-indexed
+	_, _ = fmt.Fprintf(i.out, "\r\033[%dG", col+1) // \r to start, \033[nG is 1-indexed
 }
 
 // getCursorPosition returns the line number and column (display width) of the cursor.
