@@ -1,7 +1,7 @@
 package ghostline
 
 import (
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -21,56 +21,56 @@ func extractLastWord(text string) string {
 
 // scoredMatch holds a suggestion and its match score.
 type scoredMatch struct {
-	text  string
-	score int
+	text     string
+	score    int
+	isPrefix bool
 }
 
-// getMatches returns all suggestions that match the last word.
-// Prefix matches come first, then fuzzy matches, all sorted by score.
 func (i *Input) getMatches() []string {
 	if len(i.buffer) == 0 {
 		return nil
 	}
 
-	text := string(i.buffer)
-	lastWord := extractLastWord(text)
+	lastWord := extractLastWord(string(i.buffer))
 	if lastWord == "" {
 		return nil
 	}
 
-	var prefixMatches, fuzzyMatches []scoredMatch
+	var matches []scoredMatch
 
 	for _, s := range i.suggestions {
-		if prefixMatch(lastWord, s) {
-			prefixMatches = append(prefixMatches, scoredMatch{s, fuzzyScore(lastWord, s)})
-			continue
-		}
+		isPrefix := strings.HasPrefix(strings.ToLower(s), strings.ToLower(lastWord))
+		score := fuzzyScore(lastWord, s)
 
-		if score := fuzzyScore(lastWord, s); score >= 0 {
-			fuzzyMatches = append(fuzzyMatches, scoredMatch{s, score})
+		if isPrefix || score >= 0 {
+			matches = append(matches, scoredMatch{
+				text:     s,
+				score:    score,
+				isPrefix: isPrefix,
+			})
 		}
 	}
 
-	// Sort by score descending
-	sort.Slice(prefixMatches, func(i, j int) bool {
-		return prefixMatches[i].score > prefixMatches[j].score
-	})
-	sort.Slice(fuzzyMatches, func(i, j int) bool {
-		return fuzzyMatches[i].score > fuzzyMatches[j].score
-	})
-
-	// No matches
-	if len(prefixMatches) == 0 && len(fuzzyMatches) == 0 {
+	if len(matches) == 0 {
 		return nil
 	}
 
-	// Extract strings
-	result := make([]string, 0, len(prefixMatches)+len(fuzzyMatches))
-	for _, m := range prefixMatches {
-		result = append(result, m.text)
-	}
-	for _, m := range fuzzyMatches {
-		result = append(result, m.text)
+	slices.SortFunc(matches, func(a, b scoredMatch) int {
+		if a.isPrefix != b.isPrefix {
+			if a.isPrefix {
+				return -1
+			}
+			return 1
+		}
+		if b.score != a.score {
+			return b.score - a.score
+		}
+		return strings.Compare(strings.ToLower(a.text), strings.ToLower(b.text))
+	})
+
+	result := make([]string, len(matches))
+	for idx, m := range matches {
+		result[idx] = m.text
 	}
 
 	return result

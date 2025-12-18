@@ -165,10 +165,9 @@ func (i *Input) Readline(prompt string) (string, error) {
 		}
 
 		if unicode.IsPrint(r) {
-			// Insert at cursor position
 			i.buffer = append(i.buffer[:i.cursorPos], append([]rune{r}, i.buffer[i.cursorPos:]...)...)
 			i.cursorPos++
-			i.matchIndex = 0 // Reset match cycling on buffer change
+			i.matchIndex = 0
 			i.render()
 		}
 	}

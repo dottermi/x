@@ -43,7 +43,7 @@ func TestFuzzyScore(t *testing.T) {
 	t.Run("exact match scores high", func(t *testing.T) {
 		t.Parallel()
 		score := fuzzyScore("git", "git")
-		assert.Greater(t, score, 0)
+		assert.Positive(t, score)
 	})
 
 	t.Run("consecutive matches score higher", func(t *testing.T) {
