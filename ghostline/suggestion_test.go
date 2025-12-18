@@ -124,6 +124,75 @@ func TestLastWordStart(t *testing.T) {
 	})
 }
 
+func TestCountMatches(t *testing.T) {
+	t.Parallel()
+
+	t.Run("counts multiple matches", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("he"),
+			suggestions: []string{"hello", "help", "hero", "world"},
+		}
+
+		count := input.countMatches()
+
+		assert.Equal(t, 3, count)
+	})
+
+	t.Run("counts single match", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("wor"),
+			suggestions: []string{"hello", "world"},
+		}
+
+		count := input.countMatches()
+
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("case insensitive counting", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("class"),
+			suggestions: []string{"Class", "CLASSIC", "classify", "other"},
+		}
+
+		count := input.countMatches()
+
+		assert.Equal(t, 3, count)
+	})
+
+	t.Run("returns zero for no match", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("xyz"),
+			suggestions: []string{"hello", "world"},
+		}
+
+		count := input.countMatches()
+
+		assert.Equal(t, 0, count)
+	})
+
+	t.Run("returns zero for empty buffer", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune{},
+			suggestions: []string{"hello"},
+		}
+
+		count := input.countMatches()
+
+		assert.Equal(t, 0, count)
+	})
+}
+
 func TestFindGhost(t *testing.T) {
 	t.Parallel()
 

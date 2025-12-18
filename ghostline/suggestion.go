@@ -46,6 +46,29 @@ func (i *Input) lastWordStart() int {
 	return len(i.buffer) - len([]rune(lastWord))
 }
 
+// countMatches returns the number of suggestions that match the last word.
+func (i *Input) countMatches() int {
+	if len(i.buffer) == 0 {
+		return 0
+	}
+
+	text := string(i.buffer)
+	lastWord := extractLastWord(text)
+	if lastWord == "" {
+		return 0
+	}
+
+	count := 0
+	lastWordLower := strings.ToLower(lastWord)
+	for _, s := range i.suggestions {
+		sLower := strings.ToLower(s)
+		if strings.HasPrefix(sLower, lastWordLower) {
+			count++
+		}
+	}
+	return count
+}
+
 func (i *Input) findGhost() string {
 	if len(i.buffer) == 0 {
 		return ""

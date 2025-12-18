@@ -37,15 +37,22 @@ func (i *Input) render() {
 		}
 	}
 
-	// Get ghost text (only shown when cursor is at end of last line)
+	// Get ghost text and match count (only shown when cursor is at end of last line)
 	ghost := ""
+	matchCount := 0
 	if i.cursorPos == len(i.buffer) {
 		ghost = i.findGhost()
+		matchCount = i.countMatches()
 	}
 
 	// Show ghost text if available (color: #6b7280)
 	if ghost != "" {
 		_, _ = fmt.Fprintf(i.out, "\033[38;2;107;114;128m%s\033[0m", ghost)
+	}
+
+	// Show match counter if multiple matches (color: #4b5563 - darker gray)
+	if matchCount > 1 {
+		_, _ = fmt.Fprintf(i.out, "\033[38;2;75;85;99m (1/%d)\033[0m", matchCount)
 	}
 
 	// Position cursor correctly
