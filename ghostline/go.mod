@@ -5,7 +5,6 @@ go 1.25.1
 require (
 	github.com/mattn/go-runewidth v0.0.19
 	github.com/stretchr/testify v1.11.1
-	github.com/termisquad/x/ghostline v0.0.4
 	golang.org/x/term v0.38.0
 )
 
