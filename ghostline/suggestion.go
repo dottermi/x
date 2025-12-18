@@ -16,27 +16,38 @@ func extractLastWord(text string) string {
 	return text[lastIdx+1:]
 }
 
-// findMatch returns the full matching suggestion for the last word.
-// Used by handleTab to replace the typed word with the correct case.
-func (i *Input) findMatch() string {
+// getMatches returns all suggestions that match the last word.
+func (i *Input) getMatches() []string {
 	if len(i.buffer) == 0 {
-		return ""
+		return nil
 	}
 
 	text := string(i.buffer)
 	lastWord := extractLastWord(text)
 	if lastWord == "" {
-		return ""
+		return nil
 	}
 
+	var matches []string
 	lastWordLower := strings.ToLower(lastWord)
 	for _, s := range i.suggestions {
 		sLower := strings.ToLower(s)
-		if strings.HasPrefix(sLower, lastWordLower) && len(s) >= len(lastWord) {
-			return s
+		if strings.HasPrefix(sLower, lastWordLower) {
+			matches = append(matches, s)
 		}
 	}
-	return ""
+	return matches
+}
+
+// findMatch returns the current matching suggestion based on matchIndex.
+// Used by handleTab to replace the typed word with the correct case.
+func (i *Input) findMatch() string {
+	matches := i.getMatches()
+	if len(matches) == 0 {
+		return ""
+	}
+	idx := i.matchIndex % len(matches)
+	return matches[idx]
 }
 
 // lastWordStart returns the position where the last word starts in the buffer.
@@ -48,44 +59,28 @@ func (i *Input) lastWordStart() int {
 
 // countMatches returns the number of suggestions that match the last word.
 func (i *Input) countMatches() int {
-	if len(i.buffer) == 0 {
+	return len(i.getMatches())
+}
+
+// currentMatchIndex returns the 1-based index of the current match for display.
+func (i *Input) currentMatchIndex() int {
+	matches := i.getMatches()
+	if len(matches) == 0 {
 		return 0
 	}
-
-	text := string(i.buffer)
-	lastWord := extractLastWord(text)
-	if lastWord == "" {
-		return 0
-	}
-
-	count := 0
-	lastWordLower := strings.ToLower(lastWord)
-	for _, s := range i.suggestions {
-		sLower := strings.ToLower(s)
-		if strings.HasPrefix(sLower, lastWordLower) {
-			count++
-		}
-	}
-	return count
+	return (i.matchIndex % len(matches)) + 1
 }
 
 func (i *Input) findGhost() string {
-	if len(i.buffer) == 0 {
-		return ""
-	}
-
 	text := string(i.buffer)
 	lastWord := extractLastWord(text)
 	if lastWord == "" {
 		return ""
 	}
 
-	lastWordLower := strings.ToLower(lastWord)
-	for _, s := range i.suggestions {
-		sLower := strings.ToLower(s)
-		if strings.HasPrefix(sLower, lastWordLower) && len(s) > len(lastWord) {
-			return s[len(lastWord):]
-		}
+	match := i.findMatch()
+	if match == "" || len(match) <= len(lastWord) {
+		return ""
 	}
-	return ""
+	return match[len(lastWord):]
 }

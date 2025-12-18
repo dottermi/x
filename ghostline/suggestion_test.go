@@ -124,6 +124,83 @@ func TestLastWordStart(t *testing.T) {
 	})
 }
 
+func TestGetMatches(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns all matching suggestions", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("he"),
+			suggestions: []string{"hello", "help", "hero", "world"},
+		}
+
+		matches := input.getMatches()
+
+		assert.Equal(t, []string{"hello", "help", "hero"}, matches)
+	})
+
+	t.Run("case insensitive", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("CLASS"),
+			suggestions: []string{"Class", "classic", "other"},
+		}
+
+		matches := input.getMatches()
+
+		assert.Equal(t, []string{"Class", "classic"}, matches)
+	})
+
+	t.Run("returns nil for no matches", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("xyz"),
+			suggestions: []string{"hello"},
+		}
+
+		matches := input.getMatches()
+
+		assert.Nil(t, matches)
+	})
+}
+
+func TestCurrentMatchIndex(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns 1-based index", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("he"),
+			suggestions: []string{"hello", "help", "hero"},
+			matchIndex:  0,
+		}
+
+		assert.Equal(t, 1, input.currentMatchIndex())
+
+		input.matchIndex = 1
+		assert.Equal(t, 2, input.currentMatchIndex())
+
+		input.matchIndex = 2
+		assert.Equal(t, 3, input.currentMatchIndex())
+	})
+
+	t.Run("wraps around", func(t *testing.T) {
+		t.Parallel()
+
+		input := &Input{
+			buffer:      []rune("he"),
+			suggestions: []string{"hello", "help"},
+			matchIndex:  5, // 5 % 2 = 1, so 1-based = 2
+		}
+
+		assert.Equal(t, 2, input.currentMatchIndex())
+	})
+}
+
 func TestCountMatches(t *testing.T) {
 	t.Parallel()
 

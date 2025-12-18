@@ -55,11 +55,22 @@ func handleCtrlD(i *Input, reader *bufio.Reader) (string, action) {
 
 func handleTab(i *Input, reader *bufio.Reader) (string, action) {
 	if i.cursorPos == len(i.buffer) {
-		if match := i.findMatch(); match != "" {
-			// Replace last word with the full match (preserves suggestion's case)
+		matches := i.getMatches()
+		if len(matches) == 0 {
+			return "", actionContinue
+		}
+
+		if len(matches) > 1 {
+			// Cycle to next match
+			i.matchIndex = (i.matchIndex + 1) % len(matches)
+			i.render()
+		} else {
+			// Single match: accept it
+			match := matches[0]
 			start := i.lastWordStart()
 			i.buffer = append(i.buffer[:start], []rune(match)...)
 			i.cursorPos = len(i.buffer)
+			i.matchIndex = 0
 			i.render()
 		}
 	}
@@ -75,6 +86,7 @@ func handleBackspace(i *Input, reader *bufio.Reader) (string, action) {
 	if i.cursorPos > 0 {
 		i.buffer = append(i.buffer[:i.cursorPos-1], i.buffer[i.cursorPos:]...)
 		i.cursorPos--
+		i.matchIndex = 0 // Reset match cycling on buffer change
 		i.render()
 	}
 	return "", actionContinue
@@ -103,6 +115,7 @@ var csiHandlers = map[byte]csiHandler{
 	'B': handleDownArrow,
 	'C': handleRightArrow,
 	'D': handleLeftArrow,
+	'Z': handleShiftTab,
 	'3': handleDelete,
 }
 
@@ -191,9 +204,27 @@ func (i *Input) findLineEndFrom(pos int) int {
 	return pos
 }
 
+func handleShiftTab(i *Input, _ *bufio.Reader) {
+	if i.cursorPos == len(i.buffer) {
+		matches := i.getMatches()
+		if len(matches) > 1 {
+			// Cycle to previous match
+			i.matchIndex = (i.matchIndex - 1 + len(matches)) % len(matches)
+			i.render()
+		}
+	}
+}
+
 func handleRightArrow(i *Input, _ *bufio.Reader) {
 	if i.cursorPos < len(i.buffer) {
 		i.cursorPos++
+		i.render()
+	} else if match := i.findMatch(); match != "" {
+		// At end of buffer: accept current suggestion
+		start := i.lastWordStart()
+		i.buffer = append(i.buffer[:start], []rune(match)...)
+		i.cursorPos = len(i.buffer)
+		i.matchIndex = 0
 		i.render()
 	}
 }
@@ -216,6 +247,7 @@ func (i *Input) handleDeleteKey(reader *bufio.Reader) {
 	}
 	if i.cursorPos < len(i.buffer) {
 		i.buffer = append(i.buffer[:i.cursorPos], i.buffer[i.cursorPos+1:]...)
+		i.matchIndex = 0
 		i.render()
 	}
 }
@@ -238,6 +270,7 @@ func handleCtrlK(i *Input, reader *bufio.Reader) (string, action) {
 	// Kill from cursor to end of current line
 	lineEnd := i.findLineEnd()
 	i.buffer = append(i.buffer[:i.cursorPos], i.buffer[lineEnd:]...)
+	i.matchIndex = 0
 	i.render()
 	return "", actionContinue
 }
@@ -247,6 +280,7 @@ func handleCtrlU(i *Input, reader *bufio.Reader) (string, action) {
 	lineStart := i.findLineStart()
 	i.buffer = append(i.buffer[:lineStart], i.buffer[i.cursorPos:]...)
 	i.cursorPos = lineStart
+	i.matchIndex = 0
 	i.render()
 	return "", actionContinue
 }
@@ -270,6 +304,7 @@ func handleCtrlW(i *Input, reader *bufio.Reader) (string, action) {
 
 	i.buffer = append(i.buffer[:pos], i.buffer[i.cursorPos:]...)
 	i.cursorPos = pos
+	i.matchIndex = 0
 	i.render()
 	return "", actionContinue
 }
@@ -278,6 +313,7 @@ func handleCtrlJ(i *Input, reader *bufio.Reader) (string, action) {
 	// Insert newline at cursor position
 	i.buffer = append(i.buffer[:i.cursorPos], append([]rune{'\n'}, i.buffer[i.cursorPos:]...)...)
 	i.cursorPos++
+	i.matchIndex = 0
 	i.render()
 	return "", actionContinue
 }

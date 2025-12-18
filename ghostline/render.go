@@ -52,7 +52,8 @@ func (i *Input) render() {
 
 	// Show match counter if multiple matches (color: #4b5563 - darker gray)
 	if matchCount > 1 {
-		_, _ = fmt.Fprintf(i.out, "\033[38;2;75;85;99m (1/%d)\033[0m", matchCount)
+		currentIdx := i.currentMatchIndex()
+		_, _ = fmt.Fprintf(i.out, "\033[38;2;75;85;99m (%d/%d)\033[0m", currentIdx, matchCount)
 	}
 
 	// Position cursor correctly

@@ -39,6 +39,7 @@ type Input struct {
 	buffer      []rune
 	cursorPos   int
 	suggestions []string
+	matchIndex  int    // current match index for Tab cycling
 	prompt      string
 	contPrompt  string // continuation prompt for multiline
 	prevLines   int    // previous line count for clearing
@@ -167,6 +168,7 @@ func (i *Input) Readline(prompt string) (string, error) {
 			// Insert at cursor position
 			i.buffer = append(i.buffer[:i.cursorPos], append([]rune{r}, i.buffer[i.cursorPos:]...)...)
 			i.cursorPos++
+			i.matchIndex = 0 // Reset match cycling on buffer change
 			i.render()
 		}
 	}
