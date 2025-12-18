@@ -2,10 +2,19 @@ package ghostline
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
 )
+
+// ansiRegex matches ANSI escape sequences.
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// visibleWidth returns the display width of a string, ignoring ANSI codes.
+func visibleWidth(s string) int {
+	return runewidth.StringWidth(ansiRegex.ReplaceAllString(s, ""))
+}
 
 // render redraws the entire input area including prompt, text, and ghost suggestions.
 // Clears previous output, displays each line with appropriate prompts, and positions
@@ -66,7 +75,7 @@ func (i *Input) render() {
 	if cursorLine > 0 {
 		prompt = i.contPrompt
 	}
-	col := runewidth.StringWidth(prompt) + cursorCol
+	col := visibleWidth(prompt) + cursorCol
 	_, _ = fmt.Fprintf(i.out, "\r\033[%dG", col+1) // \r to start, \033[nG is 1-indexed
 }
 
