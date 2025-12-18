@@ -7,8 +7,15 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-// render displays the prompt, buffer, and ghost text with proper cursor positioning.
-// Handles multiline input with continuation prompts.
+// render redraws the entire input area including prompt, text, and ghost suggestions.
+// Clears previous output, displays each line with appropriate prompts, and positions
+// the cursor correctly for multiline editing.
+//
+// Uses ANSI escape sequences for terminal control:
+//   - ESC[nA: move cursor up n lines
+//   - ESC[J:  clear from cursor to end of screen
+//   - ESC[nG: move cursor to column n
+//   - ESC[38;2;r;g;bm: set 24-bit foreground color
 func (i *Input) render() {
 	// Move cursor up to first line if we had multiple lines before
 	if i.prevLines > 1 {
@@ -37,15 +44,14 @@ func (i *Input) render() {
 		}
 	}
 
-	// Get ghost text (only shown when cursor is at end of last line)
-	ghost := ""
+	// Show ghost text and dropdown (only when cursor is at end of last line)
 	if i.cursorPos == len(i.buffer) {
-		ghost = i.findGhost()
-	}
-
-	// Show ghost text if available (color: #6b7280)
-	if ghost != "" {
-		_, _ = fmt.Fprintf(i.out, "\033[38;2;107;114;128m%s\033[0m", ghost)
+		// Ghost text (color: #6b7280)
+		if ghost := i.findGhost(); ghost != "" {
+			_, _ = fmt.Fprintf(i.out, "\033[38;2;107;114;128m%s\033[0m", ghost)
+		}
+		// Dropdown hints
+		i.renderDropdown()
 	}
 
 	// Position cursor correctly
@@ -61,10 +67,11 @@ func (i *Input) render() {
 		prompt = i.contPrompt
 	}
 	col := runewidth.StringWidth(prompt) + cursorCol
-	_, _ = fmt.Fprintf(i.out, "\033[%dG", col+1) // \033[nG is 1-indexed
+	_, _ = fmt.Fprintf(i.out, "\r\033[%dG", col+1) // \r to start, \033[nG is 1-indexed
 }
 
-// getCursorPosition returns the line number and column (display width) of the cursor.
+// getCursorPosition returns the cursor's line and column within the buffer.
+// Line is 0-indexed. Column is measured in display width (handles wide characters).
 func (i *Input) getCursorPosition() (line, col int) {
 	for _, r := range i.buffer[:i.cursorPos] {
 		if r == '\n' {

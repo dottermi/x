@@ -2,11 +2,12 @@ package ghostline
 
 import "strings"
 
-// History stores command history and supports navigation.
+// History stores command history with up/down arrow navigation.
+// Preserves the user's in-progress input when navigating through entries.
 type History struct {
-	entries []string
-	pos     int    // current position during navigation (-1 = new input)
-	current string // saves current input when navigating
+	entries []string // chronological list of past commands
+	pos     int      // navigation position (-1 = current input, 0+ = history index)
+	current string   // saves in-progress input during navigation
 }
 
 // NewHistory creates an empty history.
@@ -17,7 +18,8 @@ func NewHistory() *History {
 	}
 }
 
-// Add appends a non-empty, non-duplicate entry to history.
+// Add appends an entry to history after trimming whitespace.
+// Ignores empty strings and consecutive duplicates.
 func (h *History) Add(entry string) {
 	entry = strings.TrimSpace(entry)
 	if entry == "" {
@@ -33,19 +35,21 @@ func (h *History) Add(entry string) {
 	h.pos = -1
 }
 
-// Len returns the number of entries.
+// Len returns the number of stored history entries.
 func (h *History) Len() int {
 	return len(h.entries)
 }
 
-// Reset resets navigation position for a new readline session.
+// Reset prepares history for a new readline session.
+// Stores the current input for restoration after navigation.
 func (h *History) Reset(current string) {
 	h.pos = -1
 	h.current = current
 }
 
-// Previous moves to the previous (older) entry.
-// Returns the entry and true if available, or current input and false if at oldest.
+// Previous navigates to an older history entry.
+// Saves the current input on first call for later restoration.
+// Returns the entry and true, or the current input and false if at oldest.
 func (h *History) Previous(current string) (string, bool) {
 	if len(h.entries) == 0 {
 		return current, false
@@ -68,8 +72,8 @@ func (h *History) Previous(current string) (string, bool) {
 	return h.entries[h.pos], false
 }
 
-// Next moves to the next (newer) entry.
-// Returns the entry and true if available, or current input when back at newest.
+// Next navigates to a newer history entry or restores the original input.
+// Returns the entry and true, or the saved input and true when reaching the end.
 func (h *History) Next() (string, bool) {
 	if h.pos == -1 {
 		return h.current, false

@@ -348,8 +348,9 @@ func TestAddHistory(t *testing.T) {
 
 		input := NewInput(nil, nil, nil)
 
-		input.AddHistory("command")
+		input.AddHistory("first")
+		input.AddHistory("second")
 
-		assert.Equal(t, 1, input.history.Len())
+		assert.Equal(t, 2, input.history.Len())
 	})
 }

@@ -39,11 +39,16 @@ type Input struct {
 	buffer      []rune
 	cursorPos   int
 	suggestions []string
+	matchIndex  int // current match index for Tab cycling
 	prompt      string
 	contPrompt  string // continuation prompt for multiline
 	prevLines   int    // previous line count for clearing
 	handlers    map[rune]keyHandler
 	history     *History
+
+	// Match cache to avoid recomputing on every render
+	cachedMatches    []string
+	cachedMatchesFor string // buffer state when cache was computed
 
 	in  io.Reader
 	out io.Writer
@@ -164,9 +169,9 @@ func (i *Input) Readline(prompt string) (string, error) {
 		}
 
 		if unicode.IsPrint(r) {
-			// Insert at cursor position
 			i.buffer = append(i.buffer[:i.cursorPos], append([]rune{r}, i.buffer[i.cursorPos:]...)...)
 			i.cursorPos++
+			i.matchIndex = 0
 			i.render()
 		}
 	}
