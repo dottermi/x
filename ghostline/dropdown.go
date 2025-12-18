@@ -2,7 +2,9 @@ package ghostline
 
 import "fmt"
 
-// renderDropdown displays the match counter with prev/next hints.
+// renderDropdown displays match navigation hints when multiple suggestions exist.
+// Shows format: [current/total - prev  next] in dimmed text.
+// Only renders when there are 2 or more matching suggestions.
 func (i *Input) renderDropdown() {
 	matchCount := i.countMatches()
 	if matchCount > 1 {
@@ -13,12 +15,13 @@ func (i *Input) renderDropdown() {
 	}
 }
 
-// countMatches returns the number of suggestions that match the last word.
+// countMatches returns how many suggestions match the current input.
 func (i *Input) countMatches() int {
 	return len(i.getMatches())
 }
 
-// currentMatchIndex returns the 1-based index of the current match for display.
+// currentMatchIndex returns the 1-based position of the selected match.
+// Returns 0 if no matches exist.
 func (i *Input) currentMatchIndex() int {
 	matches := i.getMatches()
 	if len(matches) == 0 {
@@ -27,7 +30,8 @@ func (i *Input) currentMatchIndex() int {
 	return (i.matchIndex % len(matches)) + 1
 }
 
-// getPrevNextMatches returns the previous and next match names for display hints.
+// getPrevNextMatches returns adjacent suggestion names for navigation hints.
+// Returns empty strings if fewer than 2 matches exist.
 func (i *Input) getPrevNextMatches() (prev, next string) {
 	matches := i.getMatches()
 	if len(matches) < 2 {

@@ -2,16 +2,22 @@ package ghostline
 
 import "strings"
 
-// prefixMatch checks if text starts with pattern (case-insensitive).
-func prefixMatch(pattern, text string) bool {
-	return strings.HasPrefix(
-		strings.ToLower(text),
-		strings.ToLower(pattern),
-	)
-}
-
-// fuzzyScore returns a score for how well pattern matches text.
-// Higher score = better match. Returns -1 if no match.
+// fuzzyScore calculates how well pattern matches text using fuzzy matching.
+// Returns a positive score for matches (higher is better) or -1 for no match.
+//
+// Scoring bonuses:
+//   - Match at start of text: +10
+//   - Consecutive character matches: +5 per consecutive char
+//   - Match after word separator (space, hyphen, underscore): +8
+//   - Shorter text: up to +50
+//
+// Scoring penalties:
+//   - Gap between matched characters: -1 per gap character
+//
+// Example:
+//
+//	fuzzyScore("gc", "git-checkout")  // positive score (matches g...c)
+//	fuzzyScore("xyz", "hello")        // returns -1 (no match)
 func fuzzyScore(pattern, text string) int {
 	pattern = strings.ToLower(pattern)
 	text = strings.ToLower(text)

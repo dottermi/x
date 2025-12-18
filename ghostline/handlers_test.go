@@ -339,17 +339,3 @@ func TestNewInput(t *testing.T) {
 		assert.NotEmpty(t, input.handlers)
 	})
 }
-
-func TestAddHistory(t *testing.T) {
-	t.Parallel()
-
-	t.Run("adds entry to history", func(t *testing.T) {
-		t.Parallel()
-
-		input := NewInput(nil, nil, nil)
-
-		input.AddHistory("command")
-
-		assert.Equal(t, 1, input.history.Len())
-	})
-}

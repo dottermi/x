@@ -6,32 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrefixMatch(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		pattern string
-		text    string
-		want    bool
-	}{
-		{"exact match", "hello", "hello", true},
-		{"prefix", "hel", "hello", true},
-		{"case insensitive", "HEL", "hello", true},
-		{"no match", "world", "hello", false},
-		{"longer pattern", "hello world", "hello", false},
-		{"empty pattern", "", "hello", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := prefixMatch(tt.pattern, tt.text)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestFuzzyScore(t *testing.T) {
 	t.Parallel()
 

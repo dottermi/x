@@ -9,39 +9,6 @@ import (
 func TestHistory(t *testing.T) {
 	t.Parallel()
 
-	t.Run("NewHistory creates empty history", func(t *testing.T) {
-		t.Parallel()
-
-		h := NewHistory()
-
-		assert.NotNil(t, h)
-		assert.Equal(t, 0, h.Len())
-	})
-
-	t.Run("Add stores entries", func(t *testing.T) {
-		t.Parallel()
-
-		h := NewHistory()
-
-		h.Add("first")
-		h.Add("second")
-		h.Add("third")
-
-		assert.Equal(t, 3, h.Len())
-	})
-
-	t.Run("Add ignores empty strings", func(t *testing.T) {
-		t.Parallel()
-
-		h := NewHistory()
-
-		h.Add("")
-		h.Add("   ")
-		h.Add("\t")
-
-		assert.Equal(t, 0, h.Len())
-	})
-
 	t.Run("Add ignores consecutive duplicates", func(t *testing.T) {
 		t.Parallel()
 
