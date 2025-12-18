@@ -43,9 +43,9 @@ func (i *Input) render() {
 		ghost = i.findGhost()
 	}
 
-	// Show ghost text if available
+	// Show ghost text if available (color: #6b7280)
 	if ghost != "" {
-		_, _ = fmt.Fprintf(i.out, "\033[2m%s\033[0m", ghost)
+		_, _ = fmt.Fprintf(i.out, "\033[38;2;107;114;128m%s\033[0m", ghost)
 	}
 
 	// Position cursor correctly

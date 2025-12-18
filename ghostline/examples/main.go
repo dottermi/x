@@ -8,8 +8,20 @@ import (
 
 func main() {
 	suggestions := []string{
-		"help", "hello", "history", "exit",
-		"clear", "config", "commit", "checkout",
+		"Class(",
+		"bold", "italic", "underline", "strikethrough",
+		"uppercase", "lowercase", "capitalize",
+		"text-left", "text-center", "text-right",
+		"text-red-500", "text-green-500", "text-blue-500", "text-yellow-500",
+		"text-white", "text-black",
+		"bg-red-500", "bg-green-500", "bg-blue-500", "bg-yellow-500",
+		"bg-white", "bg-black",
+		"border", "border-rounded", "border-double",
+		"p-1", "p-2", "p-4", "px-2", "py-1",
+		"m-1", "m-2", "mx-2", "my-1",
+		"w-20", "w-40", "w-60",
+		"flex", "flex-row", "flex-col", "gap-1", "gap-2",
+		":help", ":exit",
 	}
 
 	input := ghostline.NewInput(suggestions, nil, nil)
@@ -36,7 +48,7 @@ func main() {
 			break
 		}
 
-		if line == "exit" {
+		if line == ":exit" {
 			fmt.Println("Bye!")
 			break
 		}
