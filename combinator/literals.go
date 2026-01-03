@@ -18,14 +18,14 @@ func Ident() Parser {
 	rest := Many(Choice(AlphaNum(), Char('_')))
 
 	return Map(Seq(first, rest), func(v any) any {
-		parts := v.([]any)
-		firstChar := parts[0].(rune)
-		restChars := parts[1].([]any)
+		parts := v.([]any)            //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
+		firstChar := parts[0].(rune)  //nolint:errcheck,forcetypeassert // type is guaranteed by first parser
+		restChars := parts[1].([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Many
 
 		var sb strings.Builder
 		sb.WriteRune(firstChar)
 		for _, r := range restChars {
-			sb.WriteRune(r.(rune))
+			sb.WriteRune(r.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by parser
 		}
 		return sb.String()
 	})
@@ -54,16 +54,16 @@ func Integer() Parser {
 	digits := Many1(Digit())
 
 	return Map(Seq(sign, digits), func(v any) any {
-		parts := v.([]any)
+		parts := v.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
 		neg := parts[0]
-		digitRunes := parts[1].([]any)
+		digitRunes := parts[1].([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Many1
 
 		var sb strings.Builder
 		if neg != nil {
-			sb.WriteRune(neg.(rune))
+			sb.WriteRune(neg.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by Opt(Char)
 		}
 		for _, r := range digitRunes {
-			sb.WriteRune(r.(rune))
+			sb.WriteRune(r.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by Digit
 		}
 
 		n, _ := strconv.ParseInt(sb.String(), 10, 64)
@@ -84,24 +84,24 @@ func Float() Parser {
 	decPart := Opt(Seq(Char('.'), Many1(Digit())))
 
 	return Map(Seq(sign, intPart, decPart), func(v any) any {
-		parts := v.([]any)
+		parts := v.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
 		neg := parts[0]
-		intDigits := parts[1].([]any)
+		intDigits := parts[1].([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Many1
 		dec := parts[2]
 
 		var sb strings.Builder
 		if neg != nil {
-			sb.WriteRune(neg.(rune))
+			sb.WriteRune(neg.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by Opt(Char)
 		}
 		for _, r := range intDigits {
-			sb.WriteRune(r.(rune))
+			sb.WriteRune(r.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by Digit
 		}
 
 		if dec != nil {
-			decParts := dec.([]any)
+			decParts := dec.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Opt(Seq)
 			sb.WriteRune('.')
-			for _, r := range decParts[1].([]any) {
-				sb.WriteRune(r.(rune))
+			for _, r := range decParts[1].([]any) { //nolint:errcheck,forcetypeassert // type is guaranteed by Many1
+				sb.WriteRune(r.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by Digit
 			}
 		}
 
@@ -127,12 +127,12 @@ func StringLit() Parser {
 	content := Many(Choice(escaped, regular))
 
 	return Map(Seq(quote, content, quote), func(v any) any {
-		parts := v.([]any)
-		chars := parts[1].([]any)
+		parts := v.([]any)        //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
+		chars := parts[1].([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Many
 
 		var sb strings.Builder
 		for _, r := range chars {
-			sb.WriteRune(r.(rune))
+			sb.WriteRune(r.(rune)) //nolint:errcheck,forcetypeassert // type is guaranteed by Choice
 		}
 		return sb.String()
 	})
@@ -153,7 +153,7 @@ func CharLit() Parser {
 	})
 
 	return Map(Seq(quote, Choice(escaped, regular), quote), func(v any) any {
-		parts := v.([]any)
-		return parts[1].(rune)
+		parts := v.([]any)     //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
+		return parts[1].(rune) //nolint:errcheck,forcetypeassert // type is guaranteed by Choice
 	})
 }

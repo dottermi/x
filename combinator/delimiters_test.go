@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:paralleltest // tests share parser state
 func TestBetween(t *testing.T) {
 	t.Run("should match content between delimiters", func(t *testing.T) {
 		result := Parse(Between(Char('['), Char(']'), Integer()), "[42]")
@@ -23,6 +24,7 @@ func TestBetween(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestParens(t *testing.T) {
 	t.Run("should match content in parentheses", func(t *testing.T) {
 		result := Parse(Parens(Integer()), "(42)")
@@ -35,6 +37,7 @@ func TestParens(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestBraces(t *testing.T) {
 	t.Run("should match content in braces", func(t *testing.T) {
 		result := Parse(Braces(Integer()), "{42}")
@@ -43,6 +46,7 @@ func TestBraces(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestBrackets(t *testing.T) {
 	t.Run("should match content in brackets", func(t *testing.T) {
 		result := Parse(Brackets(Integer()), "[42]")
@@ -51,6 +55,7 @@ func TestBrackets(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestAngles(t *testing.T) {
 	t.Run("should match content in angle brackets", func(t *testing.T) {
 		result := Parse(Angles(Ident()), "<html>")
@@ -59,11 +64,12 @@ func TestAngles(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSepBy(t *testing.T) {
 	t.Run("should match items separated by delimiter", func(t *testing.T) {
 		result := Parse(SepBy(Integer(), Char(',')), "1,2,3")
 		require.True(t, result.OK)
-		values := result.Value.([]any)
+		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
 		assert.Len(t, values, 3)
 		assert.Equal(t, int64(1), values[0])
 		assert.Equal(t, int64(2), values[1])
@@ -73,28 +79,29 @@ func TestSepBy(t *testing.T) {
 	t.Run("should match single item", func(t *testing.T) {
 		result := Parse(SepBy(Integer(), Char(',')), "42")
 		require.True(t, result.OK)
-		values := result.Value.([]any)
+		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
 		assert.Len(t, values, 1)
 	})
 
 	t.Run("should succeed with empty input", func(t *testing.T) {
 		result := Parse(SepBy(Integer(), Char(',')), "")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any))
+		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSepBy1(t *testing.T) {
 	t.Run("should match items separated by delimiter", func(t *testing.T) {
 		result := Parse(SepBy1(Ident(), Char(',')), "a,b,c")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 3)
+		assert.Len(t, result.Value.([]any), 3) //nolint:errcheck,forcetypeassert // test assertion
 	})
 
 	t.Run("should match single item", func(t *testing.T) {
 		result := Parse(SepBy1(Ident(), Char(',')), "x")
 		require.True(t, result.OK)
-		values := result.Value.([]any)
+		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
 		assert.Len(t, values, 1)
 		assert.Equal(t, "x", values[0])
 	})
@@ -104,11 +111,12 @@ func TestSepBy1(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestEndBy(t *testing.T) {
 	t.Run("should match items followed by terminator", func(t *testing.T) {
 		result := Parse(EndBy(Ident(), Char(';')), "a;b;c;")
 		require.True(t, result.OK)
-		values := result.Value.([]any)
+		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
 		assert.Len(t, values, 3)
 		assert.Equal(t, "a", values[0])
 		assert.Equal(t, "b", values[1])
@@ -118,22 +126,23 @@ func TestEndBy(t *testing.T) {
 	t.Run("should succeed with empty input", func(t *testing.T) {
 		result := Parse(EndBy(Ident(), Char(';')), "")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any))
+		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
 	})
 
 	t.Run("should stop when terminator missing", func(t *testing.T) {
 		result := Parse(EndBy(Ident(), Char(';')), "a;b")
 		require.True(t, result.OK)
-		values := result.Value.([]any)
+		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
 		assert.Len(t, values, 1)
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestEndBy1(t *testing.T) {
 	t.Run("should match one or more items", func(t *testing.T) {
 		result := Parse(EndBy1(Ident(), Char(';')), "a;b;")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 2)
+		assert.Len(t, result.Value.([]any), 2) //nolint:errcheck,forcetypeassert // test assertion
 	})
 
 	t.Run("should fail on empty input", func(t *testing.T) {

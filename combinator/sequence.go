@@ -107,7 +107,7 @@ func Many1(p Parser) Parser {
 		}
 
 		rest := Many(p)(first.State)
-		values := append([]any{first.Value}, rest.Value.([]any)...)
+		values := append([]any{first.Value}, rest.Value.([]any)...) //nolint:errcheck,forcetypeassert // type is guaranteed by Many
 
 		return Success(values, rest.State)
 	}

@@ -105,7 +105,7 @@ func ChainL1(p, op Parser) Parser {
 				break
 			}
 
-			fn := opResult.Value.(func(any, any) any)
+			fn := opResult.Value.(func(any, any) any) //nolint:errcheck,forcetypeassert // type is guaranteed by op parser
 			acc = fn(acc, nextResult.Value)
 			current = nextResult.State
 		}
@@ -147,7 +147,7 @@ func ChainR1(p, op Parser) Parser {
 			return r
 		}
 
-		fn := opResult.Value.(func(any, any) any)
+		fn := opResult.Value.(func(any, any) any) //nolint:errcheck,forcetypeassert // type is guaranteed by op parser
 		return Success(fn(r.Value, restResult.Value), restResult.State)
 	}
 }

@@ -11,9 +11,9 @@ package combinator
 // Example:
 //
 //	quoted := Between(Char('"'), Char('"'), Many(NoneOf("\"")))
-func Between(open, close, p Parser) Parser {
-	return Map(Seq(open, p, close), func(v any) any {
-		return v.([]any)[1]
+func Between(open, closing, p Parser) Parser {
+	return Map(Seq(open, p, closing), func(v any) any {
+		return v.([]any)[1] //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
 	})
 }
 
@@ -89,9 +89,9 @@ func SepBy1(p, sep Parser) Parser {
 	rest := Many(Right(sep, p))
 
 	return Map(Seq(p, rest), func(v any) any {
-		parts := v.([]any)
+		parts := v.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
 		first := parts[0]
-		restItems := parts[1].([]any)
+		restItems := parts[1].([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Many
 		return append([]any{first}, restItems...)
 	})
 }

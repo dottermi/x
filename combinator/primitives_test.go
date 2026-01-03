@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:paralleltest // tests share parser state
 func TestChar(t *testing.T) {
 	t.Run("should match expected character", func(t *testing.T) {
 		result := Parse(Char('a'), "abc")
@@ -33,6 +34,7 @@ func TestChar(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestString(t *testing.T) {
 	t.Run("should match exact string", func(t *testing.T) {
 		result := Parse(String("hello"), "hello world")
@@ -54,10 +56,11 @@ func TestString(t *testing.T) {
 	t.Run("should match empty string", func(t *testing.T) {
 		result := Parse(String(""), "anything")
 		assert.True(t, result.OK)
-		assert.Equal(t, "", result.Value)
+		assert.Empty(t, result.Value)
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSatisfy(t *testing.T) {
 	t.Run("should match when predicate is true", func(t *testing.T) {
 		result := Parse(Satisfy(func(r rune) bool { return r >= 'a' && r <= 'z' }), "abc")
@@ -76,6 +79,7 @@ func TestSatisfy(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestAny(t *testing.T) {
 	t.Run("should match any character", func(t *testing.T) {
 		result := Parse(Any(), "x")
@@ -89,6 +93,7 @@ func TestAny(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestEOF(t *testing.T) {
 	t.Run("should succeed at end of input", func(t *testing.T) {
 		result := Parse(EOF(), "")
@@ -102,6 +107,7 @@ func TestEOF(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestOneOf(t *testing.T) {
 	t.Run("should match character in set", func(t *testing.T) {
 		result := Parse(OneOf("aeiou"), "apple")
@@ -115,6 +121,7 @@ func TestOneOf(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestNoneOf(t *testing.T) {
 	t.Run("should match character not in set", func(t *testing.T) {
 		result := Parse(NoneOf("aeiou"), "xyz")
@@ -128,6 +135,7 @@ func TestNoneOf(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestRange(t *testing.T) {
 	t.Run("should match character in range", func(t *testing.T) {
 		result := Parse(Range('a', 'z'), "m")

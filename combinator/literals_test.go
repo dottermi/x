@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:paralleltest // tests share parser state
 func TestIdent(t *testing.T) {
 	t.Run("should match simple identifier", func(t *testing.T) {
 		result := Parse(Ident(), "myVar")
@@ -42,6 +43,7 @@ func TestIdent(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestKeyword(t *testing.T) {
 	t.Run("should match keyword followed by non-alphanumeric", func(t *testing.T) {
 		result := Parse(Keyword("if"), "if (x)")
@@ -63,6 +65,7 @@ func TestKeyword(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestInteger(t *testing.T) {
 	t.Run("should match positive", func(t *testing.T) {
 		result := Parse(Integer(), "42")
@@ -94,6 +97,7 @@ func TestInteger(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestFloat(t *testing.T) {
 	t.Run("should match simple float", func(t *testing.T) {
 		result := Parse(Float(), "3.14")
@@ -120,6 +124,7 @@ func TestFloat(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestStringLit(t *testing.T) {
 	t.Run("should match simple string", func(t *testing.T) {
 		result := Parse(StringLit(), `"hello"`)
@@ -130,7 +135,7 @@ func TestStringLit(t *testing.T) {
 	t.Run("should match empty string", func(t *testing.T) {
 		result := Parse(StringLit(), `""`)
 		assert.True(t, result.OK)
-		assert.Equal(t, "", result.Value)
+		assert.Empty(t, result.Value)
 	})
 
 	t.Run("should handle escaped quote", func(t *testing.T) {
@@ -150,6 +155,7 @@ func TestStringLit(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestCharLit(t *testing.T) {
 	t.Run("should match simple character", func(t *testing.T) {
 		result := Parse(CharLit(), `'a'`)

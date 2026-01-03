@@ -35,10 +35,9 @@ func Char(r rune) Parser {
 //	// result.Value == "hello"
 func String(s string) Parser {
 	return func(state State) Result {
-		runes := []rune(s)
 		current := state
 
-		for _, r := range runes {
+		for _, r := range s {
 			if current.IsEOF() {
 				return Failure(fmt.Errorf("unexpected EOF, expected '%s' at line %d, col %d", s, state.Line, state.Col), state)
 			}

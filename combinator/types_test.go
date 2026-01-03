@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:paralleltest // tests share parser state
 func TestNewState(t *testing.T) {
 	t.Run("should create state with correct initial position", func(t *testing.T) {
 		state := NewState("hello")
@@ -22,7 +23,7 @@ func TestNewState(t *testing.T) {
 
 	t.Run("should handle unicode", func(t *testing.T) {
 		state := NewState("café")
-		assert.Equal(t, 4, len(state.Input))
+		assert.Len(t, state.Input, 4)
 	})
 
 	t.Run("should handle empty input", func(t *testing.T) {
@@ -31,6 +32,7 @@ func TestNewState(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestState_Current(t *testing.T) {
 	t.Run("should return first rune", func(t *testing.T) {
 		state := NewState("abc")
@@ -43,6 +45,7 @@ func TestState_Current(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestState_IsEOF(t *testing.T) {
 	t.Run("should return true for empty input", func(t *testing.T) {
 		assert.True(t, NewState("").IsEOF())
@@ -58,6 +61,7 @@ func TestState_IsEOF(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestState_Advance(t *testing.T) {
 	t.Run("should increment position", func(t *testing.T) {
 		next := NewState("abc").Advance()
@@ -84,6 +88,7 @@ func TestState_Advance(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestState_AdvanceN(t *testing.T) {
 	t.Run("should advance by n positions", func(t *testing.T) {
 		next := NewState("abcdef").AdvanceN(3)
@@ -103,6 +108,7 @@ func TestState_AdvanceN(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSuccess(t *testing.T) {
 	t.Run("should create successful result", func(t *testing.T) {
 		state := NewState("test")
@@ -110,10 +116,11 @@ func TestSuccess(t *testing.T) {
 
 		assert.True(t, result.OK)
 		assert.Equal(t, "value", result.Value)
-		assert.Nil(t, result.Err)
+		assert.NoError(t, result.Err)
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestFailure(t *testing.T) {
 	t.Run("should create failed result", func(t *testing.T) {
 		state := NewState("test")
@@ -125,6 +132,7 @@ func TestFailure(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestParse(t *testing.T) {
 	t.Run("should run parser on input", func(t *testing.T) {
 		result := Parse(Char('a'), "abc")

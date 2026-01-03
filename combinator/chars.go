@@ -25,10 +25,10 @@ func Space() Parser {
 // Always succeeds (returns empty string if no whitespace).
 func Spaces() Parser {
 	return Map(Many(Space()), func(v any) any {
-		runes := v.([]any)
+		runes := v.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by parser
 		result := make([]rune, len(runes))
 		for i, r := range runes {
-			result[i] = r.(rune)
+			result[i] = r.(rune) //nolint:errcheck,forcetypeassert // type is guaranteed by parser
 		}
 		return string(result)
 	})
@@ -39,10 +39,10 @@ func Spaces() Parser {
 // Fails if no whitespace is present.
 func Spaces1() Parser {
 	return Map(Many1(Space()), func(v any) any {
-		runes := v.([]any)
+		runes := v.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by parser
 		result := make([]rune, len(runes))
 		for i, r := range runes {
-			result[i] = r.(rune)
+			result[i] = r.(rune) //nolint:errcheck,forcetypeassert // type is guaranteed by parser
 		}
 		return string(result)
 	})

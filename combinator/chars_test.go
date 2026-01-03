@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:paralleltest // tests share parser state
 func TestDigit(t *testing.T) {
 	t.Run("should match digit", func(t *testing.T) {
 		result := Parse(Digit(), "5abc")
@@ -19,6 +20,7 @@ func TestDigit(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestLetter(t *testing.T) {
 	t.Run("should match lowercase", func(t *testing.T) {
 		result := Parse(Letter(), "abc")
@@ -37,6 +39,7 @@ func TestLetter(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSpace(t *testing.T) {
 	t.Run("should match space", func(t *testing.T) {
 		result := Parse(Space(), " abc")
@@ -59,6 +62,7 @@ func TestSpace(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSpaces(t *testing.T) {
 	t.Run("should match multiple spaces", func(t *testing.T) {
 		result := Parse(Spaces(), "   abc")
@@ -69,7 +73,7 @@ func TestSpaces(t *testing.T) {
 	t.Run("should succeed with empty on no whitespace", func(t *testing.T) {
 		result := Parse(Spaces(), "abc")
 		assert.True(t, result.OK)
-		assert.Equal(t, "", result.Value)
+		assert.Empty(t, result.Value)
 	})
 
 	t.Run("should match mixed whitespace", func(t *testing.T) {
@@ -79,6 +83,7 @@ func TestSpaces(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestSpaces1(t *testing.T) {
 	t.Run("should match one or more", func(t *testing.T) {
 		result := Parse(Spaces1(), "  abc")
@@ -91,6 +96,7 @@ func TestSpaces1(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestAlpha(t *testing.T) {
 	t.Run("should match ASCII letters", func(t *testing.T) {
 		assert.True(t, Parse(Alpha(), "abc").OK)
@@ -102,6 +108,7 @@ func TestAlpha(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestAlphaNum(t *testing.T) {
 	t.Run("should match letter", func(t *testing.T) {
 		assert.True(t, Parse(AlphaNum(), "abc").OK)
@@ -116,6 +123,7 @@ func TestAlphaNum(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestLower(t *testing.T) {
 	t.Run("should match lowercase", func(t *testing.T) {
 		assert.True(t, Parse(Lower(), "abc").OK)
@@ -126,6 +134,7 @@ func TestLower(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestUpper(t *testing.T) {
 	t.Run("should match uppercase", func(t *testing.T) {
 		assert.True(t, Parse(Upper(), "ABC").OK)
@@ -136,6 +145,7 @@ func TestUpper(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestNewline(t *testing.T) {
 	t.Run("should match newline", func(t *testing.T) {
 		result := Parse(Newline(), "\nabc")
@@ -148,6 +158,7 @@ func TestNewline(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestTab(t *testing.T) {
 	t.Run("should match tab", func(t *testing.T) {
 		result := Parse(Tab(), "\tabc")
@@ -160,6 +171,7 @@ func TestTab(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestCRLF(t *testing.T) {
 	t.Run("should match CRLF", func(t *testing.T) {
 		result := Parse(CRLF(), "\r\nabc")
@@ -176,6 +188,7 @@ func TestCRLF(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestEndOfLine(t *testing.T) {
 	t.Run("should match Unix ending", func(t *testing.T) {
 		assert.True(t, Parse(EndOfLine(), "\nabc").OK)
@@ -188,6 +201,7 @@ func TestEndOfLine(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestHexDigit(t *testing.T) {
 	t.Run("should match 0-9", func(t *testing.T) {
 		assert.True(t, Parse(HexDigit(), "9").OK)
@@ -206,6 +220,7 @@ func TestHexDigit(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestOctDigit(t *testing.T) {
 	t.Run("should match 0-7", func(t *testing.T) {
 		assert.True(t, Parse(OctDigit(), "7").OK)
@@ -216,6 +231,7 @@ func TestOctDigit(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // tests share parser state
 func TestBinDigit(t *testing.T) {
 	t.Run("should match 0 and 1", func(t *testing.T) {
 		assert.True(t, Parse(BinDigit(), "0").OK)
