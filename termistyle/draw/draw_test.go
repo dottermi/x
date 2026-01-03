@@ -3,10 +3,9 @@ package draw
 import (
 	"testing"
 
+	"github.com/dottermi/x/termistyle/style"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/dottermi/x/termistyle/style"
 )
 
 func TestNewBuffer(t *testing.T) {
