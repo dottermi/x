@@ -191,3 +191,27 @@ func Failure(err error, state State) Result {
 func Parse(p Parser, input string) Result {
 	return p(NewState(input))
 }
+
+// Run executes a parser, updates the state on success, and returns the typed value.
+// This helper reduces boilerplate when writing sequential parsers manually.
+//
+// Example:
+//
+//	state := NewState("hello world")
+//	name, err := Run[string](Ident(), &state)
+//	if err != nil {
+//		return Failure(err, state)
+//	}
+//	// state is now advanced past the identifier
+func Run[T any](p Parser, s *State) (T, error) {
+	var zero T
+	res := p(*s)
+	if !res.OK {
+		return zero, res.Err
+	}
+	*s = res.State
+	if v, ok := res.Value.(T); ok {
+		return v, nil
+	}
+	return zero, nil
+}
