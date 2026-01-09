@@ -12,14 +12,14 @@ import (
 //
 //	result := Parse(Char('a'), "abc")
 //	// result.Value == 'a'
-func Char(r rune) Parser {
-	return func(state State) Result {
+func Char(r rune) Parser[rune] {
+	return func(state State) Result[rune] {
 		if state.IsEOF() {
-			return Failure(fmt.Errorf("unexpected EOF, expected '%c' at line %d, col %d", r, state.Line, state.Col), state)
+			return Failure[rune](fmt.Errorf("unexpected EOF, expected '%c' at line %d, col %d", r, state.Line, state.Col), state)
 		}
 
 		if state.Current() != r {
-			return Failure(fmt.Errorf("expected '%c', got '%c' at line %d, col %d", r, state.Current(), state.Line, state.Col), state)
+			return Failure[rune](fmt.Errorf("expected '%c', got '%c' at line %d, col %d", r, state.Current(), state.Line, state.Col), state)
 		}
 
 		return Success(r, state.Advance())
@@ -33,17 +33,17 @@ func Char(r rune) Parser {
 //
 //	result := Parse(String("hello"), "hello world")
 //	// result.Value == "hello"
-func String(s string) Parser {
-	return func(state State) Result {
+func String(s string) Parser[string] {
+	return func(state State) Result[string] {
 		current := state
 
 		for _, r := range s {
 			if current.IsEOF() {
-				return Failure(fmt.Errorf("unexpected EOF, expected '%s' at line %d, col %d", s, state.Line, state.Col), state)
+				return Failure[string](fmt.Errorf("unexpected EOF, expected '%s' at line %d, col %d", s, state.Line, state.Col), state)
 			}
 
 			if current.Current() != r {
-				return Failure(fmt.Errorf("expected '%s' at line %d, col %d", s, state.Line, state.Col), state)
+				return Failure[string](fmt.Errorf("expected '%s' at line %d, col %d", s, state.Line, state.Col), state)
 			}
 
 			current = current.Advance()
@@ -64,15 +64,15 @@ func String(s string) Parser {
 //	vowel := Satisfy(func(r rune) bool {
 //		return r == 'a' || r == 'e' || r == 'i' || r == 'o' || r == 'u'
 //	})
-func Satisfy(pred func(rune) bool) Parser {
-	return func(state State) Result {
+func Satisfy(pred func(rune) bool) Parser[rune] {
+	return func(state State) Result[rune] {
 		if state.IsEOF() {
-			return Failure(fmt.Errorf("unexpected EOF at line %d, col %d", state.Line, state.Col), state)
+			return Failure[rune](fmt.Errorf("unexpected EOF at line %d, col %d", state.Line, state.Col), state)
 		}
 
 		r := state.Current()
 		if !pred(r) {
-			return Failure(fmt.Errorf("unexpected '%c' at line %d, col %d", r, state.Line, state.Col), state)
+			return Failure[rune](fmt.Errorf("unexpected '%c' at line %d, col %d", r, state.Line, state.Col), state)
 		}
 
 		return Success(r, state.Advance())
@@ -81,10 +81,10 @@ func Satisfy(pred func(rune) bool) Parser {
 
 // Any matches any single character and returns it as a rune.
 // Fails only at end of input.
-func Any() Parser {
-	return func(state State) Result {
+func Any() Parser[rune] {
+	return func(state State) Result[rune] {
 		if state.IsEOF() {
-			return Failure(fmt.Errorf("unexpected EOF at line %d, col %d", state.Line, state.Col), state)
+			return Failure[rune](fmt.Errorf("unexpected EOF at line %d, col %d", state.Line, state.Col), state)
 		}
 
 		return Success(state.Current(), state.Advance())
@@ -96,16 +96,16 @@ func Any() Parser {
 //
 // Example:
 //
-//	complete := Seq(Integer(), EOF())
+//	complete := Seq2(Integer(), EOF())
 //	result := Parse(complete, "42")    // succeeds
 //	result = Parse(complete, "42abc")  // fails
-func EOF() Parser {
-	return func(state State) Result {
+func EOF() Parser[struct{}] {
+	return func(state State) Result[struct{}] {
 		if !state.IsEOF() {
-			return Failure(fmt.Errorf("expected EOF, got '%c' at line %d, col %d", state.Current(), state.Line, state.Col), state)
+			return Failure[struct{}](fmt.Errorf("expected EOF, got '%c' at line %d, col %d", state.Current(), state.Line, state.Col), state)
 		}
 
-		return Success(nil, state)
+		return Success(struct{}{}, state)
 	}
 }
 
@@ -116,7 +116,7 @@ func EOF() Parser {
 //
 //	op := OneOf("+-*/")
 //	result := Parse(op, "+") // result.Value == '+'
-func OneOf(chars string) Parser {
+func OneOf(chars string) Parser[rune] {
 	runes := []rune(chars)
 	return Satisfy(func(r rune) bool {
 		return slices.Contains(runes, r)
@@ -130,7 +130,7 @@ func OneOf(chars string) Parser {
 //
 //	notQuote := NoneOf("\"")
 //	content := Many(notQuote) // matches until a quote
-func NoneOf(chars string) Parser {
+func NoneOf(chars string) Parser[rune] {
 	runes := []rune(chars)
 	return Satisfy(func(r rune) bool {
 		return !slices.Contains(runes, r)
@@ -148,7 +148,7 @@ func NoneOf(chars string) Parser {
 //
 //	lowercase := Range('a', 'z')
 //	result := Parse(lowercase, "m") // result.Value == 'm'
-func Range(from, to rune) Parser {
+func Range(from, to rune) Parser[rune] {
 	return Satisfy(func(r rune) bool {
 		return r >= from && r <= to
 	})

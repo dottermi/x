@@ -11,9 +11,9 @@ package combinator
 // Example:
 //
 //	quoted := Between(Char('"'), Char('"'), Many(NoneOf("\"")))
-func Between(open, closing, p Parser) Parser {
-	return Map(Seq(open, p, closing), func(v any) any {
-		return v.([]any)[1] //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
+func Between[O, C, T any](open Parser[O], closing Parser[C], p Parser[T]) Parser[T] {
+	return Map(Seq3(open, p, closing), func(t Triple[O, T, C]) T {
+		return t.Second
 	})
 }
 
@@ -24,7 +24,7 @@ func Between(open, closing, p Parser) Parser {
 //	expression := Parens(Choice(Integer(), AddExpr()))
 //	result := Parse(expression, "(1 + 2)")
 //	// result.Value == ... // result of the inner expression
-func Parens(p Parser) Parser {
+func Parens[T any](p Parser[T]) Parser[T] {
 	return Between(Char('('), Char(')'), p)
 }
 
@@ -35,7 +35,7 @@ func Parens(p Parser) Parser {
 //	object := Braces(SepBy(KeyValuePair(), Char(',')))
 //	result := Parse(object, "{key1: value1, key2: value2}")
 //	// result.Value == []any{...} // slice of key-value pairs
-func Braces(p Parser) Parser {
+func Braces[T any](p Parser[T]) Parser[T] {
 	return Between(Char('{'), Char('}'), p)
 }
 
@@ -46,8 +46,8 @@ func Braces(p Parser) Parser {
 //
 //	array := Brackets(SepBy(Integer(), Char(',')))
 //	result := Parse(array, "[1,2,3]")
-//	// result.Value == []any{int64(1), int64(2), int64(3)}
-func Brackets(p Parser) Parser {
+//	// result.Value == []int64{1, 2, 3}
+func Brackets[T any](p Parser[T]) Parser[T] {
 	return Between(Char('['), Char(']'), p)
 }
 
@@ -59,7 +59,7 @@ func Brackets(p Parser) Parser {
 //	tag := Angles(Ident())
 //	result := Parse(tag, "<html>")
 //	// result.Value == "html"
-func Angles(p Parser) Parser {
+func Angles[T any](p Parser[T]) Parser[T] {
 	return Between(Char('<'), Char('>'), p)
 }
 
@@ -71,9 +71,9 @@ func Angles(p Parser) Parser {
 //
 //	items := SepBy(Integer(), Char(','))
 //	result := Parse(items, "1,2,3")
-//	// result.Value == []any{int64(1), int64(2), int64(3)}
-func SepBy(p, sep Parser) Parser {
-	return Choice(SepBy1(p, sep), Map(EOF(), func(_ any) any { return []any{} }))
+//	// result.Value == []int64{1, 2, 3}
+func SepBy[T, S any](p Parser[T], sep Parser[S]) Parser[[]T] {
+	return Choice(SepBy1(p, sep), Map(EOF(), func(_ struct{}) []T { return []T{} }))
 }
 
 // SepBy1 matches one or more occurrences of a parser separated by a delimiter.
@@ -84,15 +84,12 @@ func SepBy(p, sep Parser) Parser {
 //
 //	items := SepBy1(Ident(), Char(','))
 //	result := Parse(items, "a,b,c")
-//	// result.Value == []any{"a", "b", "c"}
-func SepBy1(p, sep Parser) Parser {
+//	// result.Value == []string{"a", "b", "c"}
+func SepBy1[T, S any](p Parser[T], sep Parser[S]) Parser[[]T] {
 	rest := Many(Right(sep, p))
 
-	return Map(Seq(p, rest), func(v any) any {
-		parts := v.([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Seq
-		first := parts[0]
-		restItems := parts[1].([]any) //nolint:errcheck,forcetypeassert // type is guaranteed by Many
-		return append([]any{first}, restItems...)
+	return Map(Seq2(p, rest), func(pair Pair[T, []T]) []T {
+		return append([]T{pair.First}, pair.Second...)
 	})
 }
 
@@ -103,8 +100,8 @@ func SepBy1(p, sep Parser) Parser {
 //
 //	statements := EndBy(Ident(), Char(';'))
 //	result := Parse(statements, "a;b;c;")
-//	// result.Value == []any{"a", "b", "c"}
-func EndBy(p, end Parser) Parser {
+//	// result.Value == []string{"a", "b", "c"}
+func EndBy[T, S any](p Parser[T], end Parser[S]) Parser[[]T] {
 	return Many(Left(p, end))
 }
 
@@ -115,7 +112,7 @@ func EndBy(p, end Parser) Parser {
 //
 //	statements := EndBy1(Ident(), Char(';'))
 //	result := Parse(statements, "a;b;c;")
-//	// result.Value == []any{"a", "b", "c"}
-func EndBy1(p, end Parser) Parser {
+//	// result.Value == []string{"a", "b", "c"}
+func EndBy1[T, S any](p Parser[T], end Parser[S]) Parser[[]T] {
 	return Many1(Left(p, end))
 }

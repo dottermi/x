@@ -92,8 +92,8 @@ func TestStringToken(t *testing.T) {
 
 //nolint:paralleltest // tests share parser state
 func TestChainL1(t *testing.T) {
-	addOp := Map(Char('+'), func(_ any) any {
-		return func(a, b any) any { return a.(int64) + b.(int64) } //nolint:errcheck,forcetypeassert // test code
+	addOp := Map(Char('+'), func(_ rune) func(int64, int64) int64 {
+		return func(a, b int64) int64 { return a + b }
 	})
 
 	t.Run("should parse left-associative expression", func(t *testing.T) {
@@ -113,8 +113,8 @@ func TestChainL1(t *testing.T) {
 	})
 
 	t.Run("should handle subtraction left-associatively", func(t *testing.T) {
-		subOp := Map(Char('-'), func(_ any) any {
-			return func(a, b any) any { return a.(int64) - b.(int64) } //nolint:errcheck,forcetypeassert // test code
+		subOp := Map(Char('-'), func(_ rune) func(int64, int64) int64 {
+			return func(a, b int64) int64 { return a - b }
 		})
 		result := Parse(ChainL1(Integer(), subOp), "10-3-2")
 		assert.True(t, result.OK)
@@ -124,9 +124,8 @@ func TestChainL1(t *testing.T) {
 
 //nolint:paralleltest // tests share parser state
 func TestChainR1(t *testing.T) {
-	powOp := Map(Char('^'), func(_ any) any {
-		return func(a, b any) any {
-			base, exp := a.(int64), b.(int64) //nolint:errcheck,forcetypeassert // test code
+	powOp := Map(Char('^'), func(_ rune) func(int64, int64) int64 {
+		return func(base, exp int64) int64 {
 			result := int64(1)
 			for i := int64(0); i < exp; i++ {
 				result *= base
@@ -155,30 +154,30 @@ func TestChainR1(t *testing.T) {
 //nolint:paralleltest // tests share parser state
 func TestIntegration_JSONLikeArray(t *testing.T) {
 	t.Run("should parse simple integer array", func(t *testing.T) {
-		parser := Brackets(SepBy(Integer(), Seq(Char(','), Spaces())))
+		parser := Brackets(SepBy(Integer(), Seq2(Char(','), Spaces())))
 		result := Parse(parser, "[1, 2, 3]")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 3) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Len(t, result.Value, 3)
 	})
 
 	t.Run("should parse empty array", func(t *testing.T) {
-		emptyArray := Map(String(""), func(_ any) any { return []any{} })
+		emptyArray := Map(String(""), func(_ string) []int64 { return []int64{} })
 		arrayContent := Choice(SepBy1(Integer(), Char(',')), emptyArray)
 		parser := Brackets(arrayContent)
 		result := Parse(parser, "[]")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Empty(t, result.Value)
 	})
 }
 
 //nolint:paralleltest // tests share parser state
 func TestIntegration_SimpleExpression(t *testing.T) {
 	t.Run("should parse arithmetic expression with precedence", func(t *testing.T) {
-		addOp := Map(Lexeme(Char('+')), func(_ any) any {
-			return func(a, b any) any { return a.(int64) + b.(int64) } //nolint:errcheck,forcetypeassert // test code
+		addOp := Map(Lexeme(Char('+')), func(_ rune) func(int64, int64) int64 {
+			return func(a, b int64) int64 { return a + b }
 		})
-		mulOp := Map(Lexeme(Char('*')), func(_ any) any {
-			return func(a, b any) any { return a.(int64) * b.(int64) } //nolint:errcheck,forcetypeassert // test code
+		mulOp := Map(Lexeme(Char('*')), func(_ rune) func(int64, int64) int64 {
+			return func(a, b int64) int64 { return a * b }
 		})
 
 		factor := IntToken()
@@ -194,20 +193,19 @@ func TestIntegration_SimpleExpression(t *testing.T) {
 //nolint:paralleltest // tests share parser state
 func TestIntegration_FunctionCall(t *testing.T) {
 	t.Run("should parse function call syntax", func(t *testing.T) {
-		args := Parens(SepBy(Integer(), Seq(Char(','), Spaces())))
-		funcCall := Seq(Ident(), args)
+		args := Parens(SepBy(Integer(), Seq2(Char(','), Spaces())))
+		funcCall := Seq2(Ident(), args)
 		result := Parse(funcCall, "sum(1, 2, 3)")
 		require.True(t, result.OK)
-		parts := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Equal(t, "sum", parts[0])
-		assert.Len(t, parts[1].([]any), 3) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Equal(t, "sum", result.Value.First)
+		assert.Len(t, result.Value.Second, 3)
 	})
 }
 
 //nolint:paralleltest // tests share parser state
 func TestIntegration_MultilineTracking(t *testing.T) {
 	t.Run("should track line and column", func(t *testing.T) {
-		parser := Seq(String("line1"), Newline(), String("line2"))
+		parser := Seq3(String("line1"), Newline(), String("line2"))
 		result := Parse(parser, "line1\nline2")
 		assert.True(t, result.OK)
 		assert.Equal(t, 2, result.State.Line)
