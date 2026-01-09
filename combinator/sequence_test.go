@@ -8,30 +8,40 @@ import (
 )
 
 //nolint:paralleltest // tests share parser state
-func TestSeq(t *testing.T) {
-	t.Run("should match sequence", func(t *testing.T) {
-		result := Parse(Seq(Char('a'), Char('b'), Char('c')), "abc")
+func TestSeq2(t *testing.T) {
+	t.Run("should match sequence of two", func(t *testing.T) {
+		result := Parse(Seq2(Char('a'), Char('b')), "abc")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 3)
-		assert.Equal(t, 'a', values[0])
-		assert.Equal(t, 'b', values[1])
-		assert.Equal(t, 'c', values[2])
+		assert.Equal(t, 'a', result.Value.First)
+		assert.Equal(t, 'b', result.Value.Second)
 	})
 
-	t.Run("should fail if any fails", func(t *testing.T) {
-		assert.False(t, Parse(Seq(Char('a'), Char('b'), Char('c')), "axc").OK)
+	t.Run("should fail if first fails", func(t *testing.T) {
+		assert.False(t, Parse(Seq2(Char('a'), Char('b')), "xbc").OK)
 	})
 
-	t.Run("should handle empty sequence", func(t *testing.T) {
-		result := Parse(Seq(), "abc")
-		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
+	t.Run("should fail if second fails", func(t *testing.T) {
+		assert.False(t, Parse(Seq2(Char('a'), Char('b')), "axc").OK)
 	})
 
 	t.Run("should advance state", func(t *testing.T) {
-		result := Parse(Seq(Char('a'), Char('b')), "abc")
+		result := Parse(Seq2(Char('a'), Char('b')), "abc")
 		assert.Equal(t, 2, result.State.Pos)
+	})
+}
+
+//nolint:paralleltest // tests share parser state
+func TestSeq3(t *testing.T) {
+	t.Run("should match sequence of three", func(t *testing.T) {
+		result := Parse(Seq3(Char('a'), Char('b'), Char('c')), "abcd")
+		require.True(t, result.OK)
+		assert.Equal(t, 'a', result.Value.First)
+		assert.Equal(t, 'b', result.Value.Second)
+		assert.Equal(t, 'c', result.Value.Third)
+	})
+
+	t.Run("should fail if any fails", func(t *testing.T) {
+		assert.False(t, Parse(Seq3(Char('a'), Char('b'), Char('c')), "axc").OK)
 	})
 }
 
@@ -52,12 +62,6 @@ func TestChoice(t *testing.T) {
 	t.Run("should fail when none match", func(t *testing.T) {
 		assert.False(t, Parse(Choice(String("true"), String("false")), "null").OK)
 	})
-
-	t.Run("should handle empty choice", func(t *testing.T) {
-		result := Parse(Choice(), "abc")
-		assert.False(t, result.OK)
-		assert.Contains(t, result.Err.Error(), "no alternatives")
-	})
 }
 
 //nolint:paralleltest // tests share parser state
@@ -65,20 +69,22 @@ func TestMany(t *testing.T) {
 	t.Run("should match zero occurrences", func(t *testing.T) {
 		result := Parse(Many(Digit()), "abc")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Empty(t, result.Value)
 	})
 
 	t.Run("should match multiple occurrences", func(t *testing.T) {
 		result := Parse(Many(Digit()), "123abc")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 3)
+		assert.Len(t, result.Value, 3)
+		assert.Equal(t, '1', result.Value[0])
+		assert.Equal(t, '2', result.Value[1])
+		assert.Equal(t, '3', result.Value[2])
 	})
 
 	t.Run("should stop at first non-match", func(t *testing.T) {
 		result := Parse(Many(Digit()), "12abc")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 2) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Len(t, result.Value, 2)
 		assert.Equal(t, 2, result.State.Pos)
 	})
 }
@@ -88,13 +94,13 @@ func TestMany1(t *testing.T) {
 	t.Run("should match one occurrence", func(t *testing.T) {
 		result := Parse(Many1(Digit()), "1abc")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 1) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Len(t, result.Value, 1)
 	})
 
 	t.Run("should match multiple occurrences", func(t *testing.T) {
 		result := Parse(Many1(Digit()), "123abc")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 3) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Len(t, result.Value, 3)
 	})
 
 	t.Run("should fail on zero occurrences", func(t *testing.T) {
@@ -104,10 +110,11 @@ func TestMany1(t *testing.T) {
 
 //nolint:paralleltest // tests share parser state
 func TestOpt(t *testing.T) {
-	t.Run("should return value when matched", func(t *testing.T) {
+	t.Run("should return pointer when matched", func(t *testing.T) {
 		result := Parse(Opt(Char('-')), "-42")
 		assert.True(t, result.OK)
-		assert.Equal(t, '-', result.Value)
+		require.NotNil(t, result.Value)
+		assert.Equal(t, '-', *result.Value)
 	})
 
 	t.Run("should return nil when not matched", func(t *testing.T) {
@@ -174,8 +181,7 @@ func TestCount(t *testing.T) {
 	t.Run("should match exactly n occurrences", func(t *testing.T) {
 		result := Parse(Count(3, HexDigit()), "abc123")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 3)
+		assert.Len(t, result.Value, 3)
 	})
 
 	t.Run("should fail if fewer than n", func(t *testing.T) {
@@ -185,6 +191,6 @@ func TestCount(t *testing.T) {
 	t.Run("should handle zero count", func(t *testing.T) {
 		result := Parse(Count(0, Digit()), "abc")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Empty(t, result.Value)
 	})
 }

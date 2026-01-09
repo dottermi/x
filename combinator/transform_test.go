@@ -9,25 +9,20 @@ import (
 //nolint:paralleltest // tests share parser state
 func TestMap(t *testing.T) {
 	t.Run("should transform successful result", func(t *testing.T) {
-		parser := Map(Integer(), func(v any) any { return v.(int64) * 2 }) //nolint:errcheck,forcetypeassert // test code
+		parser := Map(Integer(), func(v int64) int64 { return v * 2 })
 		result := Parse(parser, "21")
 		assert.True(t, result.OK)
 		assert.Equal(t, int64(42), result.Value)
 	})
 
 	t.Run("should propagate failure", func(t *testing.T) {
-		parser := Map(Integer(), func(v any) any { return v.(int64) * 2 }) //nolint:errcheck,forcetypeassert // test code
+		parser := Map(Integer(), func(v int64) int64 { return v * 2 })
 		assert.False(t, Parse(parser, "abc").OK)
 	})
 
 	t.Run("should allow type conversion", func(t *testing.T) {
-		parser := Map(Many(Digit()), func(v any) any {
-			runes := v.([]any) //nolint:errcheck,forcetypeassert // test code
-			result := make([]rune, len(runes))
-			for i, r := range runes {
-				result[i] = r.(rune) //nolint:errcheck,forcetypeassert // test code
-			}
-			return string(result)
+		parser := Map(Many(Digit()), func(runes []rune) string {
+			return string(runes)
 		})
 		result := Parse(parser, "123")
 		assert.True(t, result.OK)
@@ -67,10 +62,10 @@ func TestLabel(t *testing.T) {
 
 //nolint:paralleltest // tests share parser state
 func TestSkip(t *testing.T) {
-	t.Run("should return nil on success", func(t *testing.T) {
+	t.Run("should return empty struct on success", func(t *testing.T) {
 		result := Parse(Skip(String("hello")), "hello world")
 		assert.True(t, result.OK)
-		assert.Nil(t, result.Value)
+		assert.Equal(t, struct{}{}, result.Value)
 	})
 
 	t.Run("should consume input", func(t *testing.T) {
@@ -88,7 +83,7 @@ func TestSkipMany(t *testing.T) {
 	t.Run("should skip zero occurrences", func(t *testing.T) {
 		result := Parse(SkipMany(Digit()), "abc")
 		assert.True(t, result.OK)
-		assert.Nil(t, result.Value)
+		assert.Equal(t, struct{}{}, result.Value)
 		assert.Equal(t, 0, result.State.Pos)
 	})
 
@@ -117,7 +112,7 @@ func TestNot(t *testing.T) {
 	t.Run("should succeed when parser fails", func(t *testing.T) {
 		result := Parse(Not(String("if")), "else")
 		assert.True(t, result.OK)
-		assert.Nil(t, result.Value)
+		assert.Equal(t, struct{}{}, result.Value)
 		assert.Equal(t, 0, result.State.Pos)
 	})
 
@@ -145,8 +140,8 @@ func TestLookAhead(t *testing.T) {
 //nolint:paralleltest // tests share parser state
 func TestLazy(t *testing.T) {
 	t.Run("should defer parser evaluation", func(t *testing.T) {
-		var p Parser
-		lazy := Lazy(&p)
+		var p Parser[rune]
+		lazy := Lazy(func() Parser[rune] { return p })
 		p = Char('x')
 		result := Parse(lazy, "x")
 		assert.True(t, result.OK)
@@ -157,8 +152,8 @@ func TestLazy(t *testing.T) {
 //nolint:paralleltest // tests share parser state
 func TestRef(t *testing.T) {
 	t.Run("should enable recursive grammars", func(t *testing.T) {
-		var expr Rule
-		expr = func() Parser {
+		var expr Rule[int64]
+		expr = func() Parser[int64] {
 			return Choice(Integer(), Parens(Ref(&expr)))
 		}
 		result := Parse(Ref(&expr), "((42))")
@@ -167,8 +162,8 @@ func TestRef(t *testing.T) {
 	})
 
 	t.Run("should handle deeply nested", func(t *testing.T) {
-		var expr Rule
-		expr = func() Parser {
+		var expr Rule[int64]
+		expr = func() Parser[int64] {
 			return Choice(Integer(), Parens(Ref(&expr)))
 		}
 		result := Parse(Ref(&expr), "(((((1)))))")

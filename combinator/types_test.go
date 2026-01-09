@@ -124,10 +124,10 @@ func TestSuccess(t *testing.T) {
 func TestFailure(t *testing.T) {
 	t.Run("should create failed result", func(t *testing.T) {
 		state := NewState("test")
-		result := Failure(assert.AnError, state)
+		result := Failure[string](assert.AnError, state)
 
 		assert.False(t, result.OK)
-		assert.Nil(t, result.Value)
+		assert.Empty(t, result.Value)
 		assert.Equal(t, assert.AnError, result.Err)
 	})
 }

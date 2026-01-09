@@ -2,34 +2,64 @@ package combinator
 
 import "fmt"
 
-// Seq runs parsers in sequence and returns a slice of all results.
-// Fails immediately if any parser fails, returning that parser's error.
+// Pair holds two values of potentially different types.
+type Pair[A, B any] struct {
+	First  A
+	Second B
+}
+
+// Triple holds three values of potentially different types.
+type Triple[A, B, C any] struct {
+	First  A
+	Second B
+	Third  C
+}
+
+// Seq2 runs two parsers in sequence and returns a Pair of results.
+// Fails immediately if either parser fails.
 //
 // Example:
 //
 //	// Match "a" followed by "b"
-//	ab := Seq(Char('a'), Char('b'))
+//	ab := Seq2(Char('a'), Char('b'))
 //	result := Parse(ab, "ab")
-//	// result.Value == []any{'a', 'b'}
-func Seq(parsers ...Parser) Parser {
-	return func(state State) Result {
-		var values []any
-		current := state
-
-		for _, p := range parsers {
-			r := p(current)
-			if !r.OK {
-				return r
-			}
-			values = append(values, r.Value)
-			current = r.State
+//	// result.Value == Pair[rune, rune]{First: 'a', Second: 'b'}
+func Seq2[A, B any](p1 Parser[A], p2 Parser[B]) Parser[Pair[A, B]] {
+	return func(state State) Result[Pair[A, B]] {
+		r1 := p1(state)
+		if !r1.OK {
+			return Failure[Pair[A, B]](r1.Err, r1.State)
 		}
+		r2 := p2(r1.State)
+		if !r2.OK {
+			return Failure[Pair[A, B]](r2.Err, r2.State)
+		}
+		return Success(Pair[A, B]{First: r1.Value, Second: r2.Value}, r2.State)
+	}
+}
 
-		return Success(values, current)
+// Seq3 runs three parsers in sequence and returns a Triple of results.
+// Fails immediately if any parser fails.
+func Seq3[A, B, C any](p1 Parser[A], p2 Parser[B], p3 Parser[C]) Parser[Triple[A, B, C]] {
+	return func(state State) Result[Triple[A, B, C]] {
+		r1 := p1(state)
+		if !r1.OK {
+			return Failure[Triple[A, B, C]](r1.Err, r1.State)
+		}
+		r2 := p2(r1.State)
+		if !r2.OK {
+			return Failure[Triple[A, B, C]](r2.Err, r2.State)
+		}
+		r3 := p3(r2.State)
+		if !r3.OK {
+			return Failure[Triple[A, B, C]](r3.Err, r3.State)
+		}
+		return Success(Triple[A, B, C]{First: r1.Value, Second: r2.Value, Third: r3.Value}, r3.State)
 	}
 }
 
 // Choice tries parsers in order and returns the first successful result.
+// All parsers must return the same type.
 // Fails only if all alternatives fail, returning the last error.
 //
 // Example:
@@ -38,8 +68,8 @@ func Seq(parsers ...Parser) Parser {
 //	boolean := Choice(String("true"), String("false"))
 //	result := Parse(boolean, "true")
 //	// result.Value == "true"
-func Choice(parsers ...Parser) Parser {
-	return func(state State) Result {
+func Choice[T any](parsers ...Parser[T]) Parser[T] {
+	return func(state State) Result[T] {
 		var lastErr error
 
 		for _, p := range parsers {
@@ -51,9 +81,9 @@ func Choice(parsers ...Parser) Parser {
 		}
 
 		if lastErr != nil {
-			return Failure(lastErr, state)
+			return Failure[T](lastErr, state)
 		}
-		return Failure(fmt.Errorf("no alternatives matched at line %d, col %d", state.Line, state.Col), state)
+		return Failure[T](fmt.Errorf("no alternatives matched at line %d, col %d", state.Line, state.Col), state)
 	}
 }
 
@@ -65,10 +95,10 @@ func Choice(parsers ...Parser) Parser {
 //
 //	digits := Many(Digit())
 //	result := Parse(digits, "123abc")
-//	// result.Value == []any{'1', '2', '3'}
-func Many(p Parser) Parser {
-	return func(state State) Result {
-		var values []any
+//	// result.Value == []rune{'1', '2', '3'}
+func Many[T any](p Parser[T]) Parser[[]T] {
+	return func(state State) Result[[]T] {
+		var values []T
 		current := state
 
 		for {
@@ -77,13 +107,12 @@ func Many(p Parser) Parser {
 				break
 			}
 			values = append(values, r.Value)
-			current = r.State
 
-			// Evitar loop infinito se o parser não consumir nada
-			if current.Pos == state.Pos {
+			// Avoid infinite loop if parser doesn't consume input
+			if r.State.Pos == current.Pos {
 				break
 			}
-			state = current
+			current = r.State
 		}
 
 		return Success(values, current)
@@ -98,46 +127,46 @@ func Many(p Parser) Parser {
 //
 //	digits := Many1(Digit())
 //	result := Parse(digits, "123")
-//	// result.Value == []any{'1', '2', '3'}
-func Many1(p Parser) Parser {
-	return func(state State) Result {
+//	// result.Value == []rune{'1', '2', '3'}
+func Many1[T any](p Parser[T]) Parser[[]T] {
+	return func(state State) Result[[]T] {
 		first := p(state)
 		if !first.OK {
-			return first
+			return Failure[[]T](first.Err, first.State)
 		}
 
 		rest := Many(p)(first.State)
-		values := append([]any{first.Value}, rest.Value.([]any)...) //nolint:errcheck,forcetypeassert // type is guaranteed by Many
+		values := append([]T{first.Value}, rest.Value...)
 
 		return Success(values, rest.State)
 	}
 }
 
-// Opt makes a parser optional, returning nil on failure instead of an error.
+// Opt makes a parser optional, returning a pointer (nil on failure).
 // Always succeeds.
 //
 // Example:
 //
 //	sign := Opt(Char('-'))
 //	result := Parse(sign, "42")  // result.Value == nil
-//	result = Parse(sign, "-42") // result.Value == '-'
-func Opt(p Parser) Parser {
-	return func(state State) Result {
+//	result = Parse(sign, "-42") // result.Value == ptr to '-'
+func Opt[T any](p Parser[T]) Parser[*T] {
+	return func(state State) Result[*T] {
 		r := p(state)
 		if r.OK {
-			return r
+			return Success(&r.Value, r.State)
 		}
-		return Success(nil, state)
+		return Success[*T](nil, state)
 	}
 }
 
 // And sequences two parsers, returning only the second parser's result.
 // Both parsers must succeed.
-func And(p1, p2 Parser) Parser {
-	return func(state State) Result {
+func And[A, B any](p1 Parser[A], p2 Parser[B]) Parser[B] {
+	return func(state State) Result[B] {
 		r1 := p1(state)
 		if !r1.OK {
-			return r1
+			return Failure[B](r1.Err, r1.State)
 		}
 		return p2(r1.State)
 	}
@@ -150,15 +179,15 @@ func And(p1, p2 Parser) Parser {
 //
 //	// Match a number followed by a semicolon, keep only the number
 //	num := Left(Integer(), Char(';'))
-func Left(p1, p2 Parser) Parser {
-	return func(state State) Result {
+func Left[A, B any](p1 Parser[A], p2 Parser[B]) Parser[A] {
+	return func(state State) Result[A] {
 		r1 := p1(state)
 		if !r1.OK {
 			return r1
 		}
 		r2 := p2(r1.State)
 		if !r2.OK {
-			return r2
+			return Failure[A](r2.Err, r2.State)
 		}
 		return Success(r1.Value, r2.State)
 	}
@@ -171,17 +200,13 @@ func Left(p1, p2 Parser) Parser {
 //
 //	// Skip whitespace before a number
 //	num := Right(Spaces(), Integer())
-func Right(p1, p2 Parser) Parser {
-	return func(state State) Result {
+func Right[A, B any](p1 Parser[A], p2 Parser[B]) Parser[B] {
+	return func(state State) Result[B] {
 		r1 := p1(state)
 		if !r1.OK {
-			return r1
+			return Failure[B](r1.Err, r1.State)
 		}
-		r2 := p2(r1.State)
-		if !r2.OK {
-			return r2
-		}
-		return Success(r2.Value, r2.State)
+		return p2(r1.State)
 	}
 }
 
@@ -192,15 +217,15 @@ func Right(p1, p2 Parser) Parser {
 // Example:
 //
 //	hex := Count(2, HexDigit()) // match exactly 2 hex digits
-func Count(n int, p Parser) Parser {
-	return func(state State) Result {
-		var values []any
+func Count[T any](n int, p Parser[T]) Parser[[]T] {
+	return func(state State) Result[[]T] {
+		var values []T
 		current := state
 
 		for range n {
 			r := p(current)
 			if !r.OK {
-				return r
+				return Failure[[]T](r.Err, r.State)
 			}
 			values = append(values, r.Value)
 			current = r.State

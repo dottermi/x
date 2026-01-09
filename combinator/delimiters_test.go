@@ -69,24 +69,22 @@ func TestSepBy(t *testing.T) {
 	t.Run("should match items separated by delimiter", func(t *testing.T) {
 		result := Parse(SepBy(Integer(), Char(',')), "1,2,3")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 3)
-		assert.Equal(t, int64(1), values[0])
-		assert.Equal(t, int64(2), values[1])
-		assert.Equal(t, int64(3), values[2])
+		assert.Len(t, result.Value, 3)
+		assert.Equal(t, int64(1), result.Value[0])
+		assert.Equal(t, int64(2), result.Value[1])
+		assert.Equal(t, int64(3), result.Value[2])
 	})
 
 	t.Run("should match single item", func(t *testing.T) {
 		result := Parse(SepBy(Integer(), Char(',')), "42")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 1)
+		assert.Len(t, result.Value, 1)
 	})
 
 	t.Run("should succeed with empty input", func(t *testing.T) {
 		result := Parse(SepBy(Integer(), Char(',')), "")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Empty(t, result.Value)
 	})
 }
 
@@ -95,15 +93,14 @@ func TestSepBy1(t *testing.T) {
 	t.Run("should match items separated by delimiter", func(t *testing.T) {
 		result := Parse(SepBy1(Ident(), Char(',')), "a,b,c")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 3) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Len(t, result.Value, 3)
 	})
 
 	t.Run("should match single item", func(t *testing.T) {
 		result := Parse(SepBy1(Ident(), Char(',')), "x")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 1)
-		assert.Equal(t, "x", values[0])
+		assert.Len(t, result.Value, 1)
+		assert.Equal(t, "x", result.Value[0])
 	})
 
 	t.Run("should fail on empty input", func(t *testing.T) {
@@ -116,24 +113,22 @@ func TestEndBy(t *testing.T) {
 	t.Run("should match items followed by terminator", func(t *testing.T) {
 		result := Parse(EndBy(Ident(), Char(';')), "a;b;c;")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 3)
-		assert.Equal(t, "a", values[0])
-		assert.Equal(t, "b", values[1])
-		assert.Equal(t, "c", values[2])
+		assert.Len(t, result.Value, 3)
+		assert.Equal(t, "a", result.Value[0])
+		assert.Equal(t, "b", result.Value[1])
+		assert.Equal(t, "c", result.Value[2])
 	})
 
 	t.Run("should succeed with empty input", func(t *testing.T) {
 		result := Parse(EndBy(Ident(), Char(';')), "")
 		require.True(t, result.OK)
-		assert.Empty(t, result.Value.([]any)) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Empty(t, result.Value)
 	})
 
 	t.Run("should stop when terminator missing", func(t *testing.T) {
 		result := Parse(EndBy(Ident(), Char(';')), "a;b")
 		require.True(t, result.OK)
-		values := result.Value.([]any) //nolint:errcheck,forcetypeassert // test assertion
-		assert.Len(t, values, 1)
+		assert.Len(t, result.Value, 1)
 	})
 }
 
@@ -142,7 +137,7 @@ func TestEndBy1(t *testing.T) {
 	t.Run("should match one or more items", func(t *testing.T) {
 		result := Parse(EndBy1(Ident(), Char(';')), "a;b;")
 		require.True(t, result.OK)
-		assert.Len(t, result.Value.([]any), 2) //nolint:errcheck,forcetypeassert // test assertion
+		assert.Len(t, result.Value, 2)
 	})
 
 	t.Run("should fail on empty input", func(t *testing.T) {

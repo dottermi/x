@@ -13,7 +13,7 @@
 //
 //   - Primitives: [Char], [String], [Satisfy], [Any], [EOF]
 //   - Character classes: [Digit], [Letter], [Space], [AlphaNum]
-//   - Combinators: [Seq], [Choice], [Many], [Many1], [Opt], [Map]
+//   - Combinators: [Seq2], [Choice], [Many], [Many1], [Opt], [Map]
 //   - Token parsers: [Ident], [Integer], [StringLit], [Between]
 //
 // # Basic Usage
@@ -31,7 +31,7 @@
 //
 // # Building Grammars
 //
-// Use [Seq] for sequences and [Choice] for alternatives:
+// Use [Seq2] for sequences and [Choice] for alternatives:
 //
 //	// Match "true" or "false"
 //	boolean := combinator.Choice(
@@ -41,16 +41,16 @@
 //
 // Transform results with [Map]:
 //
-//	integer := combinator.Map(combinator.Integer(), func(v any) any {
-//		return v.(int64) * 2
+//	integer := combinator.Map(combinator.Integer(), func(v int64) int64 {
+//		return v * 2
 //	})
 //
 // # Recursive Grammars
 //
 // Use [Rule] and [Ref] for recursive definitions:
 //
-//	var expr combinator.Rule
-//	expr = func() combinator.Parser {
+//	var expr combinator.Rule[int64]
+//	expr = func() combinator.Parser[int64] {
 //		return combinator.Choice(
 //			combinator.Integer(),
 //			combinator.Parens(combinator.Ref(&expr)),
@@ -133,9 +133,9 @@ func (s State) AdvanceN(n int) State {
 
 // Result holds the outcome of applying a parser to input.
 // Check OK to determine success before accessing Value or Err.
-type Result struct {
+type Result[T any] struct {
 	OK    bool  // OK is true when parsing succeeded.
-	Value any   // Value contains the parsed result on success.
+	Value T     // Value contains the parsed result on success.
 	State State // State is the parser position after this result.
 	Err   error // Err contains the error message on failure.
 }
@@ -146,23 +146,23 @@ type Result struct {
 // A Parser receives the current State, attempts to match, and returns a Result.
 // On success, the Result contains the matched value and advanced State.
 // On failure, the Result contains an error and the original State.
-type Parser func(State) Result
+type Parser[T any] func(State) Result[T]
 
 // Rule enables recursive grammar definitions by deferring parser construction.
 // Use with [Ref] to create self-referential parsers.
 //
 // Example:
 //
-//	var expr Rule
-//	expr = func() Parser {
+//	var expr Rule[int64]
+//	expr = func() Parser[int64] {
 //		return Choice(Integer(), Parens(Ref(&expr)))
 //	}
-type Rule func() Parser
+type Rule[T any] func() Parser[T]
 
 // Success constructs a successful parse result with the given value and updated state.
 // Used internally by parsers; most users should use the higher-level combinators.
-func Success(value any, state State) Result {
-	return Result{
+func Success[T any](value T, state State) Result[T] {
+	return Result[T]{
 		OK:    true,
 		Value: value,
 		State: state,
@@ -171,8 +171,8 @@ func Success(value any, state State) Result {
 
 // Failure constructs a failed parse result with the given error and state.
 // Used internally by parsers; most users should use the higher-level combinators.
-func Failure(err error, state State) Result {
-	return Result{
+func Failure[T any](err error, state State) Result[T] {
+	return Result[T]{
 		OK:    false,
 		Err:   err,
 		State: state,
@@ -188,7 +188,7 @@ func Failure(err error, state State) Result {
 //	if result.OK {
 //		fmt.Println(result.Value) // 42
 //	}
-func Parse(p Parser, input string) Result {
+func Parse[T any](p Parser[T], input string) Result[T] {
 	return p(NewState(input))
 }
 
@@ -198,20 +198,17 @@ func Parse(p Parser, input string) Result {
 // Example:
 //
 //	state := NewState("hello world")
-//	name, err := Run[string](Ident(), &state)
+//	name, err := Run(Ident(), &state)
 //	if err != nil {
-//		return Failure(err, state)
+//		return Failure[MyType](err, state)
 //	}
 //	// state is now advanced past the identifier
-func Run[T any](p Parser, s *State) (T, error) {
+func Run[T any](p Parser[T], s *State) (T, error) {
 	var zero T
 	res := p(*s)
 	if !res.OK {
 		return zero, res.Err
 	}
 	*s = res.State
-	if v, ok := res.Value.(T); ok {
-		return v, nil
-	}
-	return zero, nil
+	return res.Value, nil
 }

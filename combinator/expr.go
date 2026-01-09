@@ -6,9 +6,9 @@ package combinator
 // Example:
 //
 //	num := Lexeme(Integer())
-//	result := Parse(Seq(num, num), "42   17")
+//	result := Parse(Seq2(num, num), "42   17")
 //	// Parses both numbers, ignoring whitespace between them
-func Lexeme(p Parser) Parser {
+func Lexeme[T any](p Parser[T]) Parser[T] {
 	return Left(p, Spaces())
 }
 
@@ -19,7 +19,7 @@ func Lexeme(p Parser) Parser {
 //
 //	result := Parse(Symbol("if"), "if   ")
 //	// result.Value == "if"
-func Symbol(s string) Parser {
+func Symbol(s string) Parser[string] {
 	return Lexeme(String(s))
 }
 
@@ -30,7 +30,7 @@ func Symbol(s string) Parser {
 //
 //	result := Parse(Token(), "variableName   ")
 //	// result.Value == "variableName"
-func Token() Parser {
+func Token() Parser[string] {
 	return Lexeme(Ident())
 }
 
@@ -41,7 +41,7 @@ func Token() Parser {
 //
 //	result := Parse(IntToken(), "123   ")
 //	// result.Value == int64(123)
-func IntToken() Parser {
+func IntToken() Parser[int64] {
 	return Lexeme(Integer())
 }
 
@@ -52,7 +52,7 @@ func IntToken() Parser {
 //
 //	result := Parse(FloatToken(), "3.14   ")
 //	// result.Value == 3.14
-func FloatToken() Parser {
+func FloatToken() Parser[float64] {
 	return Lexeme(Float())
 }
 
@@ -63,12 +63,12 @@ func FloatToken() Parser {
 //
 //	result := Parse(StringToken(), `"hello world"   `)
 //	// result.Value == "hello world"
-func StringToken() Parser {
+func StringToken() Parser[string] {
 	return Lexeme(StringLit())
 }
 
 // ChainL1 parses left-associative binary expressions like "1 + 2 + 3".
-// The op parser must return a function of type func(any, any) any.
+// The op parser must return a function that combines two values.
 //
 // Parameters:
 //   - p: parser for the operands
@@ -76,16 +76,14 @@ func StringToken() Parser {
 //
 // Example:
 //
-//	addOp := Map(Char('+'), func(_ any) any {
-//		return func(a, b any) any {
-//			return a.(int64) + b.(int64)
-//		}
+//	addOp := Map(Char('+'), func(_ rune) func(int64, int64) int64 {
+//		return func(a, b int64) int64 { return a + b }
 //	})
 //	expr := ChainL1(Integer(), addOp)
 //	result := Parse(expr, "1+2+3")
 //	// result.Value == int64(6), computed as ((1+2)+3)
-func ChainL1(p, op Parser) Parser {
-	return func(state State) Result {
+func ChainL1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
+	return func(state State) Result[T] {
 		r := p(state)
 		if !r.OK {
 			return r
@@ -105,8 +103,7 @@ func ChainL1(p, op Parser) Parser {
 				break
 			}
 
-			fn := opResult.Value.(func(any, any) any) //nolint:errcheck,forcetypeassert // type is guaranteed by op parser
-			acc = fn(acc, nextResult.Value)
+			acc = opResult.Value(acc, nextResult.Value)
 			current = nextResult.State
 		}
 
@@ -115,7 +112,7 @@ func ChainL1(p, op Parser) Parser {
 }
 
 // ChainR1 parses right-associative binary expressions like "2 ^ 3 ^ 4".
-// The op parser must return a function of type func(any, any) any.
+// The op parser must return a function that combines two values.
 //
 // Parameters:
 //   - p: parser for the operands
@@ -124,14 +121,12 @@ func ChainL1(p, op Parser) Parser {
 // Example:
 //
 //	// For exponentiation: 2^3^4 = 2^(3^4)
-//	powOp := Map(Char('^'), func(_ any) any {
-//		return func(a, b any) any {
-//			return math.Pow(float64(a.(int64)), float64(b.(int64)))
-//		}
+//	powOp := Map(Char('^'), func(_ rune) func(float64, float64) float64 {
+//		return func(a, b float64) float64 { return math.Pow(a, b) }
 //	})
-//	expr := ChainR1(Integer(), powOp)
-func ChainR1(p, op Parser) Parser {
-	return func(state State) Result {
+//	expr := ChainR1(Float(), powOp)
+func ChainR1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
+	return func(state State) Result[T] {
 		r := p(state)
 		if !r.OK {
 			return r
@@ -147,7 +142,6 @@ func ChainR1(p, op Parser) Parser {
 			return r
 		}
 
-		fn := opResult.Value.(func(any, any) any) //nolint:errcheck,forcetypeassert // type is guaranteed by op parser
-		return Success(fn(r.Value, restResult.Value), restResult.State)
+		return Success(opResult.Value(r.Value, restResult.Value), restResult.State)
 	}
 }
