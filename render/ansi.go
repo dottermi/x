@@ -13,14 +13,14 @@ const (
 	// Reset clears all text attributes and colors.
 	Reset = "\x1b[0m"
 
-	// Screen control
-	ClearScreen = "\x1b[2J" // Clear entire screen
+	// ClearScreen clears the entire screen.
+	ClearScreen = "\x1b[2J"
 	ClearLine   = "\x1b[2K" // Clear current line
 	CursorHome  = "\x1b[H"  // Move cursor to top-left (0, 0)
 	CursorHide  = "\x1b[?25l"
 	CursorShow  = "\x1b[?25h"
 
-	// Text attributes - enable
+	// BoldOn enables bold text attribute.
 	BoldOn      = "\x1b[1m"
 	DimOn       = "\x1b[2m"
 	ItalicOn    = "\x1b[3m"
@@ -28,8 +28,8 @@ const (
 	ReverseOn   = "\x1b[7m" // Swap foreground and background
 	StrikeOn    = "\x1b[9m"
 
-	// Text attributes - disable
-	BoldOff      = "\x1b[22m" // Also disables Dim
+	// BoldOff disables bold text attribute (also disables Dim).
+	BoldOff      = "\x1b[22m"
 	DimOff       = "\x1b[22m" // Also disables Bold
 	ItalicOff    = "\x1b[23m"
 	UnderlineOff = "\x1b[24m"

@@ -40,13 +40,5 @@ func EmptyCell() Cell {
 // Equal reports whether c and other have identical character, colors, and attributes.
 // Used internally by [Buffer.Diff] to detect changes between frames.
 func (c Cell) Equal(other Cell) bool {
-	return c.Char == other.Char &&
-		c.FG == other.FG &&
-		c.BG == other.BG &&
-		c.Bold == other.Bold &&
-		c.Dim == other.Dim &&
-		c.Italic == other.Italic &&
-		c.Underline == other.Underline &&
-		c.Strike == other.Strike &&
-		c.Reverse == other.Reverse
+	return c == other
 }

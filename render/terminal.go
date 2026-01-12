@@ -5,6 +5,78 @@ import (
 	"strings"
 )
 
+// cellStyle tracks the current styling state for incremental ANSI output.
+type cellStyle struct {
+	FG, BG                                        Color
+	Bold, Dim, Italic, Underline, Strike, Reverse bool
+}
+
+// writeAttr writes the on or off code based on current value.
+func writeAttr(w io.Writer, val bool, on, off string) {
+	if val {
+		_, _ = io.WriteString(w, on)
+	} else {
+		_, _ = io.WriteString(w, off)
+	}
+}
+
+// writeDiffColors writes ANSI codes for foreground and background color differences.
+func writeDiffColors(w io.Writer, last *cellStyle, cell Cell, firstCell bool) {
+	if firstCell || cell.FG != last.FG {
+		_, _ = io.WriteString(w, cell.FG.FGCode())
+		last.FG = cell.FG
+	}
+	if firstCell || cell.BG != last.BG {
+		_, _ = io.WriteString(w, cell.BG.BGCode())
+		last.BG = cell.BG
+	}
+}
+
+// writeDiffAttrs writes ANSI codes for text attribute differences.
+func writeDiffAttrs(w io.Writer, last *cellStyle, cell Cell, firstCell bool) {
+	if firstCell || cell.Bold != last.Bold {
+		writeAttr(w, cell.Bold, BoldOn, BoldOff)
+		last.Bold = cell.Bold
+	}
+	if firstCell || cell.Dim != last.Dim {
+		writeAttr(w, cell.Dim, DimOn, DimOff)
+		last.Dim = cell.Dim
+	}
+	if firstCell || cell.Italic != last.Italic {
+		writeAttr(w, cell.Italic, ItalicOn, ItalicOff)
+		last.Italic = cell.Italic
+	}
+	if firstCell || cell.Underline != last.Underline {
+		writeAttr(w, cell.Underline, UnderlineOn, UnderlineOff)
+		last.Underline = cell.Underline
+	}
+	if firstCell || cell.Strike != last.Strike {
+		writeAttr(w, cell.Strike, StrikeOn, StrikeOff)
+		last.Strike = cell.Strike
+	}
+	if firstCell || cell.Reverse != last.Reverse {
+		writeAttr(w, cell.Reverse, ReverseOn, ReverseOff)
+		last.Reverse = cell.Reverse
+	}
+}
+
+// writeDiff emits ANSI codes for the differences between last and cell styles.
+// Updates last to match cell and returns it.
+func writeDiff(w io.Writer, last cellStyle, cell Cell, firstCell bool) cellStyle {
+	writeDiffColors(w, &last, cell, firstCell)
+	writeDiffAttrs(w, &last, cell, firstCell)
+	return last
+}
+
+// writeChar writes the cell's character, defaulting to space for zero value.
+func writeChar(w io.Writer, char rune) {
+	if char == 0 {
+		_, _ = io.WriteString(w, " ")
+	} else {
+		_, _ = io.WriteString(w, string(char))
+	}
+}
+
 // Terminal manages double-buffered rendering with diff-based optimization.
 // It tracks the previously rendered state and outputs only the ANSI sequences
 // needed to update changed cells, minimizing terminal I/O.
@@ -72,9 +144,9 @@ func (t *Terminal) Resize(width, height int) {
 //	buf.Set(0, 0, render.Cell{Char: 'X'})
 //	output := term.Render(buf)
 //	os.Stdout.WriteString(output)
-func (t *Terminal) Render(new *Buffer) string {
+func (t *Terminal) Render(next *Buffer) string {
 	var sb strings.Builder
-	t.RenderTo(new, &sb)
+	t.RenderTo(next, &sb)
 	return sb.String()
 }
 
@@ -83,101 +155,33 @@ func (t *Terminal) Render(new *Buffer) string {
 // to avoid intermediate string allocation.
 //
 // Parameters:
-//   - new: the buffer representing the desired screen state
+//   - next: the buffer representing the desired screen state
 //   - w: destination for ANSI output
-func (t *Terminal) RenderTo(new *Buffer, w io.Writer) {
+func (t *Terminal) RenderTo(next *Buffer, w io.Writer) {
 	// Handle dimension mismatch
-	if new.Width != t.width || new.Height != t.height {
-		t.Resize(new.Width, new.Height)
+	if next.Width != t.width || next.Height != t.height {
+		t.Resize(next.Width, next.Height)
 	}
 
-	changes := t.current.Diff(new)
+	changes := t.current.Diff(next)
 	if len(changes) == 0 {
 		return
 	}
 
-	var lastFG, lastBG Color
-	var lastBold, lastDim, lastItalic, lastUnderline, lastStrike, lastReverse bool
+	var style cellStyle
 	firstCell := true
 
 	for _, change := range changes {
 		// Move cursor if not at expected position
 		if change.X != t.cursorX || change.Y != t.cursorY {
-			io.WriteString(w, MoveCursor(change.X, change.Y))
+			_, _ = io.WriteString(w, MoveCursor(change.X, change.Y))
 			t.cursorX = change.X
 			t.cursorY = change.Y
 		}
 
-		cell := change.Cell
-
-		// Emit color codes only when changed
-		if firstCell || cell.FG != lastFG {
-			io.WriteString(w, cell.FG.FGCode())
-			lastFG = cell.FG
-		}
-		if firstCell || cell.BG != lastBG {
-			io.WriteString(w, cell.BG.BGCode())
-			lastBG = cell.BG
-		}
-
-		// Emit attribute codes only when changed
-		if firstCell || cell.Bold != lastBold {
-			if cell.Bold {
-				io.WriteString(w, BoldOn)
-			} else {
-				io.WriteString(w, BoldOff)
-			}
-			lastBold = cell.Bold
-		}
-		if firstCell || cell.Dim != lastDim {
-			if cell.Dim {
-				io.WriteString(w, DimOn)
-			} else {
-				io.WriteString(w, DimOff)
-			}
-			lastDim = cell.Dim
-		}
-		if firstCell || cell.Italic != lastItalic {
-			if cell.Italic {
-				io.WriteString(w, ItalicOn)
-			} else {
-				io.WriteString(w, ItalicOff)
-			}
-			lastItalic = cell.Italic
-		}
-		if firstCell || cell.Underline != lastUnderline {
-			if cell.Underline {
-				io.WriteString(w, UnderlineOn)
-			} else {
-				io.WriteString(w, UnderlineOff)
-			}
-			lastUnderline = cell.Underline
-		}
-		if firstCell || cell.Strike != lastStrike {
-			if cell.Strike {
-				io.WriteString(w, StrikeOn)
-			} else {
-				io.WriteString(w, StrikeOff)
-			}
-			lastStrike = cell.Strike
-		}
-		if firstCell || cell.Reverse != lastReverse {
-			if cell.Reverse {
-				io.WriteString(w, ReverseOn)
-			} else {
-				io.WriteString(w, ReverseOff)
-			}
-			lastReverse = cell.Reverse
-		}
-
+		style = writeDiff(w, style, change.Cell, firstCell)
 		firstCell = false
-
-		// Write character
-		if cell.Char == 0 {
-			io.WriteString(w, " ")
-		} else {
-			io.WriteString(w, string(cell.Char))
-		}
+		writeChar(w, change.Cell.Char)
 
 		// Update cursor position
 		t.cursorX++
@@ -187,11 +191,8 @@ func (t *Terminal) RenderTo(new *Buffer, w io.Writer) {
 		}
 	}
 
-	// Reset at end
-	io.WriteString(w, Reset)
-
-	// Update current buffer
-	t.current = new.Clone()
+	_, _ = io.WriteString(w, Reset)
+	t.current = next.Clone()
 }
 
 // RenderFull renders the entire buffer without diff computation.
@@ -215,95 +216,26 @@ func (t *Terminal) RenderFull(buf *Buffer) string {
 //   - buf: the buffer to render
 //   - w: destination for ANSI output
 func (t *Terminal) RenderFullTo(buf *Buffer, w io.Writer) {
-	io.WriteString(w, MoveCursor(0, 0))
+	_, _ = io.WriteString(w, MoveCursor(0, 0))
 
-	var lastFG, lastBG Color
-	var lastBold, lastDim, lastItalic, lastUnderline, lastStrike, lastReverse bool
+	var style cellStyle
 	firstCell := true
 
-	for y := 0; y < buf.Height; y++ {
-		for x := 0; x < buf.Width; x++ {
+	for y := range buf.Height {
+		for x := range buf.Width {
 			cell := buf.Get(x, y)
-
-			// Emit color codes only when changed
-			if firstCell || cell.FG != lastFG {
-				io.WriteString(w, cell.FG.FGCode())
-				lastFG = cell.FG
-			}
-			if firstCell || cell.BG != lastBG {
-				io.WriteString(w, cell.BG.BGCode())
-				lastBG = cell.BG
-			}
-
-			// Emit attribute codes only when changed
-			if firstCell || cell.Bold != lastBold {
-				if cell.Bold {
-					io.WriteString(w, BoldOn)
-				} else if !firstCell {
-					io.WriteString(w, BoldOff)
-				}
-				lastBold = cell.Bold
-			}
-			if firstCell || cell.Dim != lastDim {
-				if cell.Dim {
-					io.WriteString(w, DimOn)
-				} else if !firstCell {
-					io.WriteString(w, DimOff)
-				}
-				lastDim = cell.Dim
-			}
-			if firstCell || cell.Italic != lastItalic {
-				if cell.Italic {
-					io.WriteString(w, ItalicOn)
-				} else if !firstCell {
-					io.WriteString(w, ItalicOff)
-				}
-				lastItalic = cell.Italic
-			}
-			if firstCell || cell.Underline != lastUnderline {
-				if cell.Underline {
-					io.WriteString(w, UnderlineOn)
-				} else if !firstCell {
-					io.WriteString(w, UnderlineOff)
-				}
-				lastUnderline = cell.Underline
-			}
-			if firstCell || cell.Strike != lastStrike {
-				if cell.Strike {
-					io.WriteString(w, StrikeOn)
-				} else if !firstCell {
-					io.WriteString(w, StrikeOff)
-				}
-				lastStrike = cell.Strike
-			}
-			if firstCell || cell.Reverse != lastReverse {
-				if cell.Reverse {
-					io.WriteString(w, ReverseOn)
-				} else if !firstCell {
-					io.WriteString(w, ReverseOff)
-				}
-				lastReverse = cell.Reverse
-			}
-
+			style = writeDiff(w, style, cell, firstCell)
 			firstCell = false
-
-			// Write character
-			if cell.Char == 0 {
-				io.WriteString(w, " ")
-			} else {
-				io.WriteString(w, string(cell.Char))
-			}
+			writeChar(w, cell.Char)
 		}
 
 		// Newline between rows (except last)
 		if y < buf.Height-1 {
-			io.WriteString(w, "\n")
+			_, _ = io.WriteString(w, "\n")
 		}
 	}
 
-	io.WriteString(w, Reset)
-
-	// Update state
+	_, _ = io.WriteString(w, Reset)
 	t.current = buf.Clone()
 	t.cursorX = buf.Width - 1
 	t.cursorY = buf.Height - 1

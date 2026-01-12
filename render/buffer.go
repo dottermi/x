@@ -117,23 +117,17 @@ type CellChange struct {
 //	for _, c := range changes {
 //		fmt.Printf("Cell at (%d,%d) changed to %q\n", c.X, c.Y, c.Cell.Char)
 //	}
-func (b *Buffer) Diff(new *Buffer) []CellChange {
+func (b *Buffer) Diff(next *Buffer) []CellChange {
 	var changes []CellChange
 
 	// Handle mismatched dimensions
-	maxY := b.Height
-	if new.Height < maxY {
-		maxY = new.Height
-	}
-	maxX := b.Width
-	if new.Width < maxX {
-		maxX = new.Width
-	}
+	maxX := min(b.Width, next.Width)
+	maxY := min(b.Height, next.Height)
 
-	for y := 0; y < maxY; y++ {
-		for x := 0; x < maxX; x++ {
+	for y := range maxY {
+		for x := range maxX {
 			oldCell := b.Get(x, y)
-			newCell := new.Get(x, y)
+			newCell := next.Get(x, y)
 			if !oldCell.Equal(newCell) {
 				changes = append(changes, CellChange{X: x, Y: y, Cell: newCell})
 			}

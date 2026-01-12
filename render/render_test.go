@@ -9,7 +9,9 @@ import (
 )
 
 func TestColor(t *testing.T) {
+	t.Parallel()
 	t.Run("RGB creates set color", func(t *testing.T) {
+		t.Parallel()
 		c := RGB(255, 128, 0)
 
 		assert.True(t, c.IsSet())
@@ -19,30 +21,35 @@ func TestColor(t *testing.T) {
 	})
 
 	t.Run("Default creates unset color", func(t *testing.T) {
+		t.Parallel()
 		c := Default()
 
 		assert.False(t, c.IsSet())
 	})
 
 	t.Run("FGCode returns correct ANSI", func(t *testing.T) {
+		t.Parallel()
 		c := RGB(255, 0, 0)
 
 		assert.Equal(t, "\x1b[38;2;255;0;0m", c.FGCode())
 	})
 
 	t.Run("FGCode returns default for unset", func(t *testing.T) {
+		t.Parallel()
 		c := Default()
 
 		assert.Equal(t, "\x1b[39m", c.FGCode())
 	})
 
 	t.Run("BGCode returns correct ANSI", func(t *testing.T) {
+		t.Parallel()
 		c := RGB(0, 255, 0)
 
 		assert.Equal(t, "\x1b[48;2;0;255;0m", c.BGCode())
 	})
 
 	t.Run("BGCode returns default for unset", func(t *testing.T) {
+		t.Parallel()
 		c := Default()
 
 		assert.Equal(t, "\x1b[49m", c.BGCode())
@@ -50,7 +57,9 @@ func TestColor(t *testing.T) {
 }
 
 func TestCell(t *testing.T) {
+	t.Parallel()
 	t.Run("EmptyCell returns space with defaults", func(t *testing.T) {
+		t.Parallel()
 		c := EmptyCell()
 
 		assert.Equal(t, ' ', c.Char)
@@ -59,6 +68,7 @@ func TestCell(t *testing.T) {
 	})
 
 	t.Run("Equal returns true for identical cells", func(t *testing.T) {
+		t.Parallel()
 		c1 := Cell{Char: 'A', FG: RGB(255, 0, 0), Bold: true}
 		c2 := Cell{Char: 'A', FG: RGB(255, 0, 0), Bold: true}
 
@@ -66,6 +76,7 @@ func TestCell(t *testing.T) {
 	})
 
 	t.Run("Equal returns false for different cells", func(t *testing.T) {
+		t.Parallel()
 		c1 := Cell{Char: 'A', FG: RGB(255, 0, 0), Bold: true}
 		c2 := Cell{Char: 'A', FG: RGB(255, 0, 0), Bold: false}
 
@@ -73,6 +84,7 @@ func TestCell(t *testing.T) {
 	})
 
 	t.Run("Equal checks all attributes", func(t *testing.T) {
+		t.Parallel()
 		base := Cell{Char: 'X'}
 
 		assert.False(t, base.Equal(Cell{Char: 'Y'}))
@@ -86,7 +98,9 @@ func TestCell(t *testing.T) {
 }
 
 func TestBuffer(t *testing.T) {
+	t.Parallel()
 	t.Run("NewBuffer creates correct dimensions", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(80, 24)
 
 		assert.Equal(t, 80, buf.Width)
@@ -95,6 +109,7 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("NewBuffer fills with empty cells", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(5, 5)
 
 		for i := range buf.Cells {
@@ -103,6 +118,7 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Set and Get work correctly", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(10, 10)
 		cell := Cell{Char: 'X', FG: RGB(255, 0, 0)}
 
@@ -112,6 +128,7 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Set ignores out of bounds", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(10, 10)
 
 		assert.NotPanics(t, func() {
@@ -123,6 +140,7 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Get returns EmptyCell for out of bounds", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(10, 10)
 
 		assert.True(t, buf.Get(-1, 0).Equal(EmptyCell()))
@@ -130,6 +148,7 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Fill sets all cells", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(5, 5)
 		cell := Cell{Char: 'X', Bold: true}
 
@@ -141,6 +160,7 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Clone creates independent copy", func(t *testing.T) {
+		t.Parallel()
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'A'})
 
@@ -152,17 +172,19 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Diff returns changed cells", func(t *testing.T) {
+		t.Parallel()
 		old := NewBuffer(10, 10)
-		new := NewBuffer(10, 10)
-		new.Set(0, 0, Cell{Char: 'X'})
-		new.Set(5, 5, Cell{Char: 'Y'})
+		next := NewBuffer(10, 10)
+		next.Set(0, 0, Cell{Char: 'X'})
+		next.Set(5, 5, Cell{Char: 'Y'})
 
-		changes := old.Diff(new)
+		changes := old.Diff(next)
 
 		assert.Len(t, changes, 2)
 	})
 
 	t.Run("Diff returns empty for identical buffers", func(t *testing.T) {
+		t.Parallel()
 		buf1 := NewBuffer(10, 10)
 		buf2 := buf1.Clone()
 
@@ -172,11 +194,12 @@ func TestBuffer(t *testing.T) {
 	})
 
 	t.Run("Diff includes correct positions", func(t *testing.T) {
+		t.Parallel()
 		old := NewBuffer(10, 10)
-		new := NewBuffer(10, 10)
-		new.Set(3, 7, Cell{Char: 'Z'})
+		next := NewBuffer(10, 10)
+		next.Set(3, 7, Cell{Char: 'Z'})
 
-		changes := old.Diff(new)
+		changes := old.Diff(next)
 
 		require.Len(t, changes, 1)
 		assert.Equal(t, 3, changes[0].X)
@@ -186,7 +209,9 @@ func TestBuffer(t *testing.T) {
 }
 
 func TestTerminal(t *testing.T) {
+	t.Parallel()
 	t.Run("NewTerminal creates with dimensions", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(80, 24)
 
 		assert.Equal(t, 80, term.width)
@@ -195,6 +220,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Render returns empty for no changes", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 
@@ -204,6 +230,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Render includes MoveCursor", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(5, 5, Cell{Char: 'X'})
@@ -215,6 +242,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Render includes color codes", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'R', FG: RGB(255, 0, 0)})
@@ -225,6 +253,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Render includes background color", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'B', BG: RGB(0, 0, 255)})
@@ -235,6 +264,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Render includes attribute codes", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'B', Bold: true})
@@ -245,6 +275,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Render ends with Reset", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'X'})
@@ -255,6 +286,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("RenderFull renders entire buffer", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(3, 2)
 		buf := NewBuffer(3, 2)
 		buf.Set(0, 0, Cell{Char: 'A'})
@@ -275,6 +307,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("RenderFull starts with cursor home", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(5, 5)
 		buf := NewBuffer(5, 5)
 
@@ -284,6 +317,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Clear returns clear screen codes", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 
 		output := term.Clear()
@@ -293,6 +327,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Clear resets internal buffer", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'X'})
@@ -308,6 +343,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Resize updates dimensions", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 
 		term.Resize(20, 15)
@@ -317,6 +353,7 @@ func TestTerminal(t *testing.T) {
 	})
 
 	t.Run("Resize clears buffer", func(t *testing.T) {
+		t.Parallel()
 		term := NewTerminal(10, 10)
 		buf := NewBuffer(10, 10)
 		buf.Set(0, 0, Cell{Char: 'X'})
@@ -333,21 +370,26 @@ func TestTerminal(t *testing.T) {
 }
 
 func TestANSICodes(t *testing.T) {
+	t.Parallel()
 	t.Run("MoveCursor generates correct code", func(t *testing.T) {
+		t.Parallel()
 		assert.Equal(t, "\x1b[1;1H", MoveCursor(0, 0))
 		assert.Equal(t, "\x1b[5;10H", MoveCursor(9, 4))
 		assert.Equal(t, "\x1b[25;80H", MoveCursor(79, 24))
 	})
 
 	t.Run("HideCursor returns correct code", func(t *testing.T) {
+		t.Parallel()
 		assert.Equal(t, CursorHide, HideCursor())
 	})
 
 	t.Run("ShowCursor returns correct code", func(t *testing.T) {
+		t.Parallel()
 		assert.Equal(t, CursorShow, ShowCursor())
 	})
 
 	t.Run("Constants have correct values", func(t *testing.T) {
+		t.Parallel()
 		assert.Equal(t, "\x1b[0m", Reset)
 		assert.Equal(t, "\x1b[2J", ClearScreen)
 		assert.Equal(t, "\x1b[H", CursorHome)
@@ -356,6 +398,7 @@ func TestANSICodes(t *testing.T) {
 	})
 
 	t.Run("Attribute codes are correct", func(t *testing.T) {
+		t.Parallel()
 		assert.Equal(t, "\x1b[1m", BoldOn)
 		assert.Equal(t, "\x1b[22m", BoldOff)
 		assert.Equal(t, "\x1b[2m", DimOn)
