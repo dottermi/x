@@ -29,7 +29,7 @@ func TestBox_MinMaxDimensions(t *testing.T) {
 
 		box := NewBox(style.Style{
 			Width:     100,
-			Height:   100,
+			Height:    100,
 			MaxHeight: 30,
 		})
 
@@ -57,7 +57,7 @@ func TestBox_MinMaxDimensions(t *testing.T) {
 
 		box := NewBox(style.Style{
 			Width:     100,
-			Height:   10,
+			Height:    10,
 			MinHeight: 50,
 		})
 
@@ -282,4 +282,3 @@ func TestBox_FlexLayout(t *testing.T) {
 		assert.Equal(t, 50, child2.W)
 	})
 }
-

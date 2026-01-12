@@ -1,5 +1,3 @@
-// Package layout computes positions for nested box elements using flex layout.
-// This file contains the adapter for the kjk/flex (Yoga) library.
 package layout
 
 import (
@@ -37,15 +35,20 @@ func buildFlexTree(box *Box, parentGap int, parentDirection style.FlexDirection,
 
 // applyStyleToNode maps termistyle.Style properties to flex.Node setters.
 func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirection style.FlexDirection, isFirstChild bool) {
-	// Dimensions
+	applyDimensions(node, s)
+	applyFlexLayout(node, s)
+	applySpacing(node, s)
+	applyDisplay(node, s)
+	applyGapAsMargin(node, s, parentGap, parentDirection, isFirstChild)
+}
+
+func applyDimensions(node *flex.Node, s style.Style) {
 	if s.Width > 0 {
 		node.StyleSetWidth(float32(s.Width))
 	}
 	if s.Height > 0 {
 		node.StyleSetHeight(float32(s.Height))
 	}
-
-	// Min/Max dimensions
 	if s.MinWidth > 0 {
 		node.StyleSetMinWidth(float32(s.MinWidth))
 	}
@@ -58,19 +61,21 @@ func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirec
 	if s.MaxHeight > 0 {
 		node.StyleSetMaxHeight(float32(s.MaxHeight))
 	}
+	if s.AspectRatio > 0 {
+		node.StyleSetAspectRatio(float32(s.AspectRatio))
+	}
+}
 
-	// Flex direction and wrap
+func applyFlexLayout(node *flex.Node, s style.Style) {
 	node.StyleSetFlexDirection(convertFlexDirection(s.FlexDirection))
 	node.StyleSetFlexWrap(convertFlexWrap(s.FlexWrap))
-
-	// Alignment
 	node.StyleSetJustifyContent(convertJustify(s.JustifyContent))
 	node.StyleSetAlignItems(convertAlign(s.AlignItems))
+	node.StyleSetPositionType(convertPositionType(s.Position))
+
 	if s.AlignSelf != 0 {
 		node.StyleSetAlignSelf(convertAlign(s.AlignSelf))
 	}
-
-	// Flex properties
 	if s.FlexGrow > 0 {
 		node.StyleSetFlexGrow(float32(s.FlexGrow))
 	}
@@ -80,16 +85,9 @@ func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirec
 	if s.FlexBasis > 0 {
 		node.StyleSetFlexBasis(float32(s.FlexBasis))
 	}
+}
 
-	// Aspect ratio
-	if s.AspectRatio > 0 {
-		node.StyleSetAspectRatio(float32(s.AspectRatio))
-	}
-
-	// Position type
-	node.StyleSetPositionType(convertPositionType(s.Position))
-
-	// Padding (individual edges)
+func applySpacing(node *flex.Node, s style.Style) {
 	if s.Padding.Top > 0 {
 		node.StyleSetPadding(flex.EdgeTop, float32(s.Padding.Top))
 	}
@@ -102,8 +100,6 @@ func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirec
 	if s.Padding.Left > 0 {
 		node.StyleSetPadding(flex.EdgeLeft, float32(s.Padding.Left))
 	}
-
-	// Margin (individual edges)
 	if s.Margin.Top > 0 {
 		node.StyleSetMargin(flex.EdgeTop, float32(s.Margin.Top))
 	}
@@ -116,8 +112,6 @@ func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirec
 	if s.Margin.Left > 0 {
 		node.StyleSetMargin(flex.EdgeLeft, float32(s.Margin.Left))
 	}
-
-	// Border (as spacing - flex uses border for layout calculations)
 	if s.Border.Top.IsSet() {
 		node.StyleSetBorder(flex.EdgeTop, 1)
 	}
@@ -130,16 +124,14 @@ func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirec
 	if s.Border.Left.IsSet() {
 		node.StyleSetBorder(flex.EdgeLeft, 1)
 	}
+}
 
-	// Display
+func applyDisplay(node *flex.Node, s style.Style) {
 	if s.Display == style.None {
 		node.StyleSetDisplay(flex.DisplayNone)
 	} else {
 		node.StyleSetDisplay(flex.DisplayFlex)
 	}
-
-	// Simulate Gap via margins (flex doesn't have native gap support)
-	applyGapAsMargin(node, s, parentGap, parentDirection, isFirstChild)
 }
 
 // applyGapAsMargin simulates CSS gap by adding margins to non-first children.
@@ -187,6 +179,8 @@ func convertFlexDirection(d style.FlexDirection) flex.FlexDirection {
 	switch d {
 	case style.Column:
 		return flex.FlexDirectionColumn
+	case style.Row:
+		return flex.FlexDirectionRow
 	default:
 		return flex.FlexDirectionRow
 	}
@@ -195,6 +189,8 @@ func convertFlexDirection(d style.FlexDirection) flex.FlexDirection {
 // convertJustify maps termistyle Justify to flex.Justify.
 func convertJustify(j style.Justify) flex.Justify {
 	switch j {
+	case style.JustifyStart:
+		return flex.JustifyFlexStart
 	case style.JustifyCenter:
 		return flex.JustifyCenter
 	case style.JustifyEnd:
@@ -211,6 +207,8 @@ func convertJustify(j style.Justify) flex.Justify {
 // convertAlign maps termistyle Align to flex.Align.
 func convertAlign(a style.Align) flex.Align {
 	switch a {
+	case style.AlignStart:
+		return flex.AlignFlexStart
 	case style.AlignCenter:
 		return flex.AlignCenter
 	case style.AlignEnd:
@@ -225,6 +223,8 @@ func convertAlign(a style.Align) flex.Align {
 // convertFlexWrap maps termistyle FlexWrap to flex.Wrap.
 func convertFlexWrap(w style.FlexWrap) flex.Wrap {
 	switch w {
+	case style.NoWrap:
+		return flex.WrapNoWrap
 	case style.Wrap:
 		return flex.WrapWrap
 	default:
@@ -235,6 +235,8 @@ func convertFlexWrap(w style.FlexWrap) flex.Wrap {
 // convertPositionType maps termistyle PositionType to flex.PositionType.
 func convertPositionType(p style.PositionType) flex.PositionType {
 	switch p {
+	case style.Relative:
+		return flex.PositionTypeRelative
 	case style.Absolute:
 		return flex.PositionTypeAbsolute
 	default:

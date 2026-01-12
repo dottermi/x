@@ -48,7 +48,7 @@ type Style struct {
 	FlexWrap       FlexWrap
 	JustifyContent Justify
 	AlignItems     Align
-	AlignSelf      Align   // Per-item override of AlignItems
+	AlignSelf      Align // Per-item override of AlignItems
 	Gap            int
 	FlexGrow       float64
 	FlexShrink     float64
