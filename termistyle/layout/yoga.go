@@ -16,18 +16,19 @@ var flexConfig = func() *flex.Config {
 
 // buildFlexTree converts a Box tree into a flex.Node tree.
 // It recursively processes all children and applies styles.
-func buildFlexTree(box *Box, parentGap int, isFirstChild bool) *flex.Node {
+func buildFlexTree(box *Box, parentGap int, parentDirection style.FlexDirection, isFirstChild bool) *flex.Node {
 	node := flex.NewNodeWithConfig(flexConfig)
-	applyStyleToNode(node, box.Style, parentGap, isFirstChild)
+	applyStyleToNode(node, box.Style, parentGap, parentDirection, isFirstChild)
 
 	// Process children
 	gap := box.Style.Gap
+	direction := box.Style.FlexDirection
 	for i, child := range box.Children {
 		// Skip absolute positioned elements - they're handled separately
 		if child.Style.Position == style.Absolute {
 			continue
 		}
-		childNode := buildFlexTree(child, gap, i == 0)
+		childNode := buildFlexTree(child, gap, direction, i == 0)
 		node.InsertChild(childNode, len(node.Children))
 	}
 
@@ -35,7 +36,7 @@ func buildFlexTree(box *Box, parentGap int, isFirstChild bool) *flex.Node {
 }
 
 // applyStyleToNode maps termistyle.Style properties to flex.Node setters.
-func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, isFirstChild bool) {
+func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, parentDirection style.FlexDirection, isFirstChild bool) {
 	// Dimensions
 	if s.Width > 0 {
 		node.StyleSetWidth(float32(s.Width))
@@ -138,30 +139,24 @@ func applyStyleToNode(node *flex.Node, s style.Style, parentGap int, isFirstChil
 	}
 
 	// Simulate Gap via margins (flex doesn't have native gap support)
-	// Apply margin on the start side of the main axis for non-first children
-	applyGapAsMargin(node, s, parentGap, isFirstChild)
+	applyGapAsMargin(node, s, parentGap, parentDirection, isFirstChild)
 }
 
 // applyGapAsMargin simulates CSS gap by adding margins to non-first children.
 // Gap is applied to the leading edge based on parent's flex direction.
-func applyGapAsMargin(node *flex.Node, s style.Style, parentGap int, isFirstChild bool) {
+func applyGapAsMargin(node *flex.Node, s style.Style, parentGap int, parentDirection style.FlexDirection, isFirstChild bool) {
 	if parentGap == 0 || isFirstChild {
 		return
 	}
 
-	// We need to determine the parent's flex direction, but we don't have access to it here.
-	// Since this is called during buildFlexTree, we pass direction info differently.
-	// For now, we'll use a simpler approach: add margin to both Top and Left,
-	// and let the flex algorithm handle which one applies based on layout.
-
-	// Actually, we need to track parent's flex direction. Let's modify the signature.
-	// For now, apply margin to the appropriate edge based on common usage.
-	// In a Row layout, gap applies to Left margin; in Column, to Top margin.
-	// Since we're using web defaults (Row), we'll apply to Left by default.
-
-	// This will be enhanced later. For now, apply to left (row direction).
-	existingLeft := s.Margin.Left
-	node.StyleSetMargin(flex.EdgeLeft, float32(existingLeft+parentGap))
+	// Apply gap to the appropriate edge based on parent's flex direction
+	if parentDirection == style.Column {
+		existingTop := s.Margin.Top
+		node.StyleSetMargin(flex.EdgeTop, float32(existingTop+parentGap))
+	} else {
+		existingLeft := s.Margin.Left
+		node.StyleSetMargin(flex.EdgeLeft, float32(existingLeft+parentGap))
+	}
 }
 
 // extractLayout copies computed layout values from flex.Node back to Box.

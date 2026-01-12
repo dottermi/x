@@ -35,7 +35,6 @@ func NewBox(s style.Style) *Box {
 //
 //	text := layout.NewText("Hello", style.Style{Foreground: style.Color("#FFF")})
 func NewText(content string, s style.Style) *Box {
-	// Auto-calculate dimensions if not specified
 	if s.Width == 0 {
 		s.Width = len([]rune(content))
 	}
@@ -65,7 +64,7 @@ func (b *Box) Calculate() {
 	b.prepareTextContent()
 
 	// Build flex tree from box tree
-	root := buildFlexTree(b, 0, true)
+	root := buildFlexTree(b, 0, style.Row, true)
 
 	// Determine parent constraints
 	parentWidth := float32(b.Style.Width)
@@ -113,26 +112,6 @@ func (b *Box) prepareTextContent() {
 	for _, child := range b.Children {
 		child.prepareTextContent()
 	}
-}
-
-// outerWidth returns the total width including margins.
-func (b *Box) outerWidth() int {
-	return b.W + b.Style.Margin.Left + b.Style.Margin.Right
-}
-
-// outerHeight returns the total height including margins.
-func (b *Box) outerHeight() int {
-	return b.H + b.Style.Margin.Top + b.Style.Margin.Bottom
-}
-
-// marginLeft returns the left margin value.
-func (b *Box) marginLeft() int {
-	return b.Style.Margin.Left
-}
-
-// marginTop returns the top margin value.
-func (b *Box) marginTop() int {
-	return b.Style.Margin.Top
 }
 
 // positionAbsoluteChildren positions children with Position: Absolute.
