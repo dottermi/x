@@ -2,7 +2,10 @@
 // Supports block and flexbox layout modes.
 package layout
 
-import "github.com/dottermi/x/termistyle/style"
+import (
+	"github.com/dottermi/x/termistyle/style"
+	"github.com/kjk/flex"
+)
 
 // Box represents a rectangular layout element with children.
 // After Calculate is called, X, Y, W, H contain computed positions.
@@ -32,7 +35,6 @@ func NewBox(s style.Style) *Box {
 //
 //	text := layout.NewText("Hello", style.Style{Foreground: style.Color("#FFF")})
 func NewText(content string, s style.Style) *Box {
-	// Auto-calculate dimensions if not specified
 	if s.Width == 0 {
 		s.Width = len([]rune(content))
 	}
@@ -48,7 +50,7 @@ func (b *Box) AddChild(child *Box) {
 }
 
 // Calculate computes positions for this box and all descendants.
-// Uses flex or block layout based on the Display property.
+// Uses the Yoga flex layout engine for accurate CSS flexbox calculations.
 // If Width or Height is 0, auto-calculates based on children.
 // Must be called after building the box tree.
 //
@@ -58,160 +60,58 @@ func (b *Box) AddChild(child *Box) {
 //	root.AddChild(layout.NewBox(childStyle))
 //	root.Calculate()
 func (b *Box) Calculate() {
-	// Calculate padding and border sizes
+	// Handle text content auto-sizing before flex calculation
+	b.prepareTextContent()
+
+	// Build flex tree from box tree
+	root := buildFlexTree(b, 0, style.Row, true)
+
+	// Determine parent constraints
+	parentWidth := float32(b.Style.Width)
+	parentHeight := float32(b.Style.Height)
+	if parentWidth == 0 {
+		parentWidth = flex.Undefined
+	}
+	if parentHeight == 0 {
+		parentHeight = flex.Undefined
+	}
+
+	// Calculate layout using Yoga
+	flex.CalculateLayout(root, parentWidth, parentHeight, flex.DirectionLTR)
+
+	// Extract computed layout back to box tree
+	extractLayout(root, b, 0, 0)
+
+	// Position absolute children (handled separately from flex flow)
+	// Calculate content area offsets from padding and border
 	padding := b.Style.Padding
-	borderTop, borderRight, borderBottom, borderLeft := 0, 0, 0, 0
-	if b.Style.Border.Top.IsSet() {
-		borderTop = 1
-	}
-	if b.Style.Border.Right.IsSet() {
-		borderRight = 1
-	}
-	if b.Style.Border.Bottom.IsSet() {
-		borderBottom = 1
-	}
+	borderLeft, borderTop := 0, 0
 	if b.Style.Border.Left.IsSet() {
 		borderLeft = 1
 	}
-
-	extraW := padding.Left + padding.Right + borderLeft + borderRight
-	extraH := padding.Top + padding.Bottom + borderTop + borderBottom
-
-	// Handle auto-sizing when Width or Height is 0
-	b.W = b.Style.Width
-	b.H = b.Style.Height
-	if b.Style.Width == 0 || b.Style.Height == 0 {
-		autoW, autoH := b.calculateAutoSize()
-		if b.Style.Width == 0 {
-			b.W = autoW + extraW
-		}
-		if b.Style.Height == 0 {
-			b.H = autoH + extraH
-		}
+	if b.Style.Border.Top.IsSet() {
+		borderTop = 1
 	}
-
-	if len(b.Children) == 0 {
-		return
-	}
-
 	startX := padding.Left + borderLeft
 	startY := padding.Top + borderTop
-	innerW := b.W - extraW
-	innerH := b.H - extraH
-
-	if b.Style.Display == style.Flex {
-		b.calculateFlex(startX, startY, innerW, innerH)
-	} else {
-		b.calculateBlock(startX, startY)
-	}
-}
-
-// calculateAutoSize calculates the minimum size needed to fit all children.
-// Returns the inner width and height (excluding padding and border).
-// Considers children's margins when calculating total size.
-func (b *Box) calculateAutoSize() (int, int) {
-	if len(b.Children) == 0 {
-		// For text content, use content size
-		if b.Content != "" {
-			return len([]rune(b.Content)), 1
-		}
-		return 0, 0
-	}
-
-	// First, recursively calculate sizes for all children
-	for _, child := range b.Children {
-		child.Calculate()
-	}
-
-	gap := b.Style.Gap
-	isRow := b.Style.Display == style.Flex && b.Style.FlexDirection == style.Row
-
-	var totalW, totalH, maxW, maxH int
-	for i, child := range b.Children {
-		// Use outer dimensions (including margins) for layout calculations
-		outerW := child.outerWidth()
-		outerH := child.outerHeight()
-
-		if outerW > maxW {
-			maxW = outerW
-		}
-		if outerH > maxH {
-			maxH = outerH
-		}
-		totalW += outerW
-		totalH += outerH
-		if i > 0 {
-			totalW += gap
-			totalH += gap
-		}
-	}
-
-	if isRow {
-		// Row: sum widths, max height
-		return totalW, maxH
-	}
-	// Column or Block: max width, sum heights
-	return maxW, totalH
-}
-
-// calculateBlock positions children in vertical stack order.
-// Respects each child's margin for positioning.
-func (b *Box) calculateBlock(startX, startY int) {
-	y := startY
-	for _, child := range b.Children {
-		// Skip absolute positioned elements in normal flow
-		if child.Style.Position == style.Absolute {
-			continue
-		}
-		// Apply margins to position
-		child.X = b.X + startX + child.marginLeft()
-		child.Y = b.Y + y + child.marginTop()
-		child.Calculate()
-		// Advance by outer height (including margins) plus gap
-		y += child.outerHeight() + b.Style.Gap
-	}
-	// Position absolute children relative to this container
 	b.positionAbsoluteChildren(startX, startY)
 }
 
-// calculateFlex dispatches to row or column flex calculation.
-func (b *Box) calculateFlex(startX, startY, innerW, innerH int) {
-	if b.Style.FlexWrap == style.Wrap {
-		if b.Style.FlexDirection == style.Column {
-			b.calculateFlexColumnWrap(startX, startY, innerW, innerH)
-		} else {
-			b.calculateFlexRowWrap(startX, startY, innerW, innerH)
-		}
-		b.positionAbsoluteChildren(startX, startY)
-		return
+// prepareTextContent recursively prepares text content sizing.
+// Text nodes need their content size set before flex calculation.
+func (b *Box) prepareTextContent() {
+	// Set content-based size for text nodes
+	if b.Content != "" && b.Style.Width == 0 {
+		b.Style.Width = len([]rune(b.Content))
+	}
+	if b.Content != "" && b.Style.Height == 0 {
+		b.Style.Height = 1
 	}
 
-	if b.Style.FlexDirection == style.Column {
-		b.calculateFlexColumn(startX, startY, innerW, innerH)
-	} else {
-		b.calculateFlexRow(startX, startY, innerW, innerH)
+	// Recurse to children
+	for _, child := range b.Children {
+		child.prepareTextContent()
 	}
-	b.positionAbsoluteChildren(startX, startY)
-}
-
-// outerWidth returns the total width including margins.
-func (b *Box) outerWidth() int {
-	return b.W + b.Style.Margin.Left + b.Style.Margin.Right
-}
-
-// outerHeight returns the total height including margins.
-func (b *Box) outerHeight() int {
-	return b.H + b.Style.Margin.Top + b.Style.Margin.Bottom
-}
-
-// marginLeft returns the left margin value.
-func (b *Box) marginLeft() int {
-	return b.Style.Margin.Left
-}
-
-// marginTop returns the top margin value.
-func (b *Box) marginTop() int {
-	return b.Style.Margin.Top
 }
 
 // positionAbsoluteChildren positions children with Position: Absolute.
