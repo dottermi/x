@@ -1,0 +1,103 @@
+# render
+
+> Terminal rendering library with double-buffering and diff optimization for Go
+
+## Overview
+
+A terminal UI rendering library inspired by Ratatui's immediate-mode pattern. Minimizes ANSI escape code output by tracking previous frame state and only updating changed cells.
+
+## Core Types
+
+### Color
+RGB color with optional terminal default fallback.
+- `RGB(r, g, b uint8) Color` - explicit color
+- `Default() Color` - terminal default (transparent)
+- `IsSet() bool` - true if explicitly set via RGB
+- `FGCode() / BGCode() string` - ANSI escape sequences
+- `WriteFGTo(w) / WriteBGTo(w)` - zero-allocation write
+
+### Cell
+Single terminal character position with styling.
+```go
+Cell{
+    Char      rune    // character (0 = space)
+    FG, BG    Color   // foreground/background
+    Bold, Dim, Italic, Underline, Strike, Reverse bool
+}
+```
+- `EmptyCell() Cell` - space with default colors
+- `Equal(other Cell) bool` - compare cells
+
+### Buffer
+2D grid of cells in row-major order (`index = y*Width + x`).
+- `NewBuffer(width, height int) *Buffer` - create with empty cells
+- `Set(x, y int, c Cell)` - write cell (clips out-of-bounds)
+- `Get(x, y int) Cell` - read cell (returns EmptyCell if OOB)
+- `Fill(c Cell)` - set all cells
+- `Clone() *Buffer` - deep copy
+- `Diff(next *Buffer) []CellChange` - get changed cells
+
+### Terminal
+Double-buffered renderer with diff optimization.
+- `NewTerminal(width, height int) *Terminal` - create renderer
+- `Render(next *Buffer) string` - diff render, returns ANSI string
+- `RenderTo(next *Buffer, w io.Writer)` - diff render to writer (zero-alloc)
+- `RenderFull(buf *Buffer) string` - full render without diff
+- `RenderFullTo(buf *Buffer, w io.Writer)` - full render to writer
+- `Resize(width, height int)` - update dimensions
+- `Clear() string` - reset buffer and clear screen
+
+## ANSI Constants
+
+```go
+Reset, ClearScreen, ClearLine, CursorHome, CursorHide, CursorShow
+AltScreenEnter, AltScreenLeave  // fullscreen apps
+BoldOn/Off, DimOn/Off, ItalicOn/Off, UnderlineOn/Off, StrikeOn/Off, ReverseOn/Off
+MoveCursor(x, y int) string
+HideCursor() / ShowCursor() string
+```
+
+## Usage Pattern
+
+```go
+term := render.NewTerminal(80, 24)
+fmt.Print(render.AltScreenEnter + render.HideCursor())
+defer fmt.Print(render.ShowCursor() + render.AltScreenLeave)
+
+for {
+    buf := render.NewBuffer(80, 24)
+    // Draw to buffer
+    buf.Set(10, 5, render.Cell{Char: 'X', FG: render.RGB(255, 0, 0)})
+    // Render only changes
+    fmt.Print(term.Render(buf))
+}
+```
+
+## Key Design Decisions
+
+- `Color.Set` distinguishes `RGB(0,0,0)` (black) from `Default()` (terminal default)
+- Out-of-bounds `Buffer.Set()` silently clips; `Get()` returns `EmptyCell()`
+- `RenderTo()` writes directly to `io.Writer` to avoid string allocation
+- Style tracking minimizes redundant ANSI codes between adjacent cells
+
+## Build & Test
+
+```bash
+go build ./...
+go test ./...
+go test -run TestBuffer
+go test -v ./...
+```
+
+## File Structure
+
+```
+render/
+├── color.go      # Color type with RGB/Default
+├── cell.go       # Cell type with styling attributes
+├── buffer.go     # 2D cell grid with diff computation
+├── terminal.go   # Double-buffered renderer
+├── ansi.go       # ANSI escape sequence constants
+└── examples/
+    └── doom-fire/ # Fire effect demo using half-blocks
+```
