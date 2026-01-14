@@ -13,9 +13,9 @@ import (
 	"github.com/dottermi/x/render"
 )
 
-// Fire palette: black → red → orange → yellow → white
+// Fire palette: transparent → red → orange → yellow → white
 var palette = []render.Color{
-	render.RGB(0, 0, 0),       // 0 - terminal default (transparent)
+	render.Default(),          // 0 - terminal default (transparent)
 	render.RGB(7, 7, 7),       // 1
 	render.RGB(31, 7, 7),      // 2
 	render.RGB(47, 15, 7),     // 3
@@ -132,18 +132,28 @@ func (f *fireState) render() *render.Buffer {
 	bufHeight := f.height / 2
 	buf := render.NewBuffer(f.width, bufHeight)
 
-	for y := 0; y < bufHeight; y++ {
+	for y := range bufHeight {
 		for x := 0; x < f.width; x++ {
 			topIdx := (y*2)*f.width + x
 			botIdx := (y*2+1)*f.width + x
 
-			topColor := palette[f.fire[topIdx]]
-			botColor := palette[f.fire[botIdx]]
+			topIntensity := f.fire[topIdx]
+			botIntensity := f.fire[botIdx]
+			topColor := palette[topIntensity]
+			botColor := palette[botIntensity]
+			topTransparent := topIntensity == 0
+			botTransparent := botIntensity == 0
 
-			cell := render.Cell{
-				Char: '▀',
-				FG:   topColor,
-				BG:   botColor,
+			var cell render.Cell
+			switch {
+			case topTransparent && botTransparent:
+				cell = render.Cell{Char: ' '}
+			case topTransparent:
+				cell = render.Cell{Char: '▄', FG: botColor}
+			case botTransparent:
+				cell = render.Cell{Char: '▀', FG: topColor}
+			default:
+				cell = render.Cell{Char: '▀', FG: topColor, BG: botColor}
 			}
 			buf.Set(x, y, cell)
 		}
