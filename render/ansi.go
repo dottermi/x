@@ -20,6 +20,10 @@ const (
 	CursorHide  = "\x1b[?25l"
 	CursorShow  = "\x1b[?25h"
 
+	// Alternate screen buffer for fullscreen apps (like vim, htop)
+	AltScreenEnter = "\x1b[?1049h"
+	AltScreenLeave = "\x1b[?1049l"
+
 	// BoldOn enables bold text attribute.
 	BoldOn      = "\x1b[1m"
 	DimOn       = "\x1b[2m"
