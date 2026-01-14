@@ -65,7 +65,7 @@ linters:
   exclusions:
     generated: lax
     paths:
-      - examples$
+      - examples/
     rules:
       - linters:
           - revive
@@ -133,4 +133,4 @@ formatters:
     paths:
       - third_party$
       - builtin$
-      - examples$
+      - examples/

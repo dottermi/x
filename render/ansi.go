@@ -20,7 +20,7 @@ const (
 	CursorHide  = "\x1b[?25l"
 	CursorShow  = "\x1b[?25h"
 
-	// Alternate screen buffer for fullscreen apps (like vim, htop)
+	// AltScreenEnter switches to alternate screen buffer for fullscreen apps (like vim, htop).
 	AltScreenEnter = "\x1b[?1049h"
 	AltScreenLeave = "\x1b[?1049l"
 

@@ -42,7 +42,7 @@ func BenchmarkBufferDiff(b *testing.B) {
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
 			old := NewBuffer(width, height)
-			new := old.Clone()
+			next := old.Clone()
 
 			// Apply changes based on rate
 			totalCells := width * height
@@ -50,12 +50,12 @@ func BenchmarkBufferDiff(b *testing.B) {
 			for i := 0; i < changeCells; i++ {
 				x := i % width
 				y := i / width
-				new.Set(x, y, Cell{Char: 'X'})
+				next.Set(x, y, Cell{Char: 'X'})
 			}
 
 			b.ReportAllocs()
 			for b.Loop() {
-				_ = old.Diff(new)
+				_ = old.Diff(next)
 			}
 		})
 	}
