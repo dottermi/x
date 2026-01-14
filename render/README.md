@@ -107,6 +107,7 @@ macOS 26.0.1
 Go 1.25.5 darwin/arm64
 ```
 
+```
 | Operation                        | Time    | Allocs |
 | -------------------------------- | ------- | ------ |
 | `Buffer.Set`                     | 1.9 ns  | 0      |
@@ -126,6 +127,8 @@ Go 1.25.5 darwin/arm64
 | `Color.FGCode (set)`             | 22.9 ns | 1      |
 | `EmptyCell`                      | 1.7 ns  | 0      |
 | `Cell.Equal`                     | 4.2 ns  | 0      |
+
+```
 
 ```bash
 go test -bench=. -benchmem ./...
