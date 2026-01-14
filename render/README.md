@@ -97,7 +97,7 @@ render.HideCursor() string
 render.ShowCursor() string
 ```
 
-## Benchmarks
+## Benchmark
 
 ```
 Environment
