@@ -99,11 +99,13 @@ render.ShowCursor() string
 
 ## Benchmarks
 
-**Environment:**
-- Apple M4 Pro (14 cores: 10P + 4E)
-- 48 GB RAM
-- macOS 26.0.1
-- Go 1.25.5 darwin/arm64
+```
+Environment
+Apple M4 Pro (14 cores: 10P + 4E)
+48 GB RAM
+macOS 26.0.1
+Go 1.25.5 darwin/arm64
+```
 
 | Operation                        | Time    | Allocs |
 | -------------------------------- | ------- | ------ |
