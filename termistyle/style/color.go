@@ -3,6 +3,8 @@ package style
 import (
 	"strconv"
 	"strings"
+
+	"github.com/dottermi/x/render"
 )
 
 // Color represents a 24-bit RGB color as a hex string.
@@ -39,4 +41,13 @@ func (c Color) G() uint8 {
 // B returns the blue component (0-255).
 func (c Color) B() uint8 {
 	return uint8(c.hex() & 0xFF)
+}
+
+// ToRender converts a style.Color to a render.Color.
+// Returns render.Default() if the color is not set.
+func (c Color) ToRender() render.Color {
+	if !c.IsSet() {
+		return render.Default()
+	}
+	return render.RGB(c.R(), c.G(), c.B())
 }

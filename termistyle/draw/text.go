@@ -3,6 +3,7 @@ package draw
 import (
 	"strings"
 
+	"github.com/dottermi/x/render"
 	"github.com/dottermi/x/termistyle/style"
 )
 
@@ -12,9 +13,9 @@ import (
 // Example:
 //
 //	buf.DrawText(5, 2, "Hello", fg, bg)
-func (b *Buffer) DrawText(x, y int, text string, fg, bg style.Color) {
-	for i, ch := range text {
-		b.Set(x+i, y, Cell{Char: ch, Foreground: fg, Background: bg})
+func DrawText(b *render.Buffer, x, y int, text string, fg, bg style.Color) {
+	for i, ch := range []rune(text) {
+		b.Set(x+i, y, render.Cell{Char: ch, FG: fg.ToRender(), BG: bg.ToRender()})
 	}
 }
 
@@ -23,9 +24,9 @@ func (b *Buffer) DrawText(x, y int, text string, fg, bg style.Color) {
 //
 // Example:
 //
-//	buf.DrawStyledText(5, 2, "Hello", s)
-func (b *Buffer) DrawStyledText(x, y int, text string, s style.Style) {
-	b.DrawStyledTextInBox(x, y, text, 0, 1, s)
+//	DrawStyledText(buf, 5, 2, "Hello", s)
+func DrawStyledText(b *render.Buffer, x, y int, text string, s style.Style) {
+	DrawStyledTextInBox(b, x, y, text, 0, 1, s)
 }
 
 // DrawStyledTextInWidth renders a string with text alignment within a container width.
@@ -34,9 +35,9 @@ func (b *Buffer) DrawStyledText(x, y int, text string, s style.Style) {
 //
 // Example:
 //
-//	buf.DrawStyledTextInWidth(5, 2, "Hello", 20, s) // aligns within 20 chars
-func (b *Buffer) DrawStyledTextInWidth(x, y int, text string, containerWidth int, s style.Style) {
-	b.DrawStyledTextInBox(x, y, text, containerWidth, 1, s)
+//	DrawStyledTextInWidth(buf, 5, 2, "Hello", 20, s) // aligns within 20 chars
+func DrawStyledTextInWidth(b *render.Buffer, x, y int, text string, containerWidth int, s style.Style) {
+	DrawStyledTextInBox(b, x, y, text, containerWidth, 1, s)
 }
 
 // DrawStyledTextInBox renders text with wrapping, alignment within a box.
@@ -45,26 +46,26 @@ func (b *Buffer) DrawStyledTextInWidth(x, y int, text string, containerWidth int
 //
 // Example:
 //
-//	buf.DrawStyledTextInBox(5, 2, "Long text here", 20, 5, s)
-func (b *Buffer) DrawStyledTextInBox(x, y int, text string, containerWidth, containerHeight int, s style.Style) {
-	b.DrawStyledTextInBoxClipped(x, y, text, containerWidth, containerHeight, s, ClipRect{X: 0, Y: 0, W: b.Width, H: b.Height})
+//	DrawStyledTextInBox(buf, 5, 2, "Long text here", 20, 5, s)
+func DrawStyledTextInBox(b *render.Buffer, x, y int, text string, containerWidth, containerHeight int, s style.Style) {
+	DrawStyledTextInBoxClipped(b, x, y, text, containerWidth, containerHeight, s, render.ClipRect{X: 0, Y: 0, W: b.Width, H: b.Height})
 }
 
 // DrawStyledTextInBoxClipped renders text with wrapping, alignment, and clipping.
-func (b *Buffer) DrawStyledTextInBoxClipped(x, y int, text string, containerWidth, containerHeight int, s style.Style, clip ClipRect) {
+func DrawStyledTextInBoxClipped(b *render.Buffer, x, y int, text string, containerWidth, containerHeight int, s style.Style, clip render.ClipRect) {
 	text = s.TextTransform.Apply(text)
 
 	lines, needsEllipsis := prepareTextLines(text, containerWidth, containerHeight, s.TextWrap)
 
-	cell := Cell{
-		Foreground: s.Foreground,
-		Background: s.Background,
-		Bold:       s.FontWeight.IsBold(),
-		Italic:     s.FontStyle.IsItalic(),
-		Underline:  s.TextDecoration.HasUnderline(),
-		Strike:     s.TextDecoration.HasLineThrough(),
-		Dim:        s.Dim,
-		Reverse:    s.Reverse,
+	cell := render.Cell{
+		FG:        s.Foreground.ToRender(),
+		BG:        s.Background.ToRender(),
+		Bold:      s.FontWeight.IsBold(),
+		Italic:    s.FontStyle.IsItalic(),
+		Underline: s.TextDecoration.HasUnderline(),
+		Strike:    s.TextDecoration.HasLineThrough(),
+		Dim:       s.Dim,
+		Reverse:   s.Reverse,
 	}
 
 	for lineIdx, line := range lines {

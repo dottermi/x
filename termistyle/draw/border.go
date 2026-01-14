@@ -1,6 +1,9 @@
 package draw
 
-import "github.com/dottermi/x/termistyle/style"
+import (
+	"github.com/dottermi/x/render"
+	"github.com/dottermi/x/termistyle/style"
+)
 
 // DrawBorder renders a rectangular border using box-drawing characters.
 // Each side can have a different style and color.
@@ -12,13 +15,13 @@ import "github.com/dottermi/x/termistyle/style"
 //
 // Example:
 //
-//	buf.DrawBorder(0, 0, 20, 10, style.BorderAll(style.BorderRound, style.Color("#FFFFFF")))
-func (b *Buffer) DrawBorder(x, y, width, height int, border style.Border) {
-	b.DrawBorderClipped(x, y, width, height, border, ClipRect{X: 0, Y: 0, W: b.Width, H: b.Height})
+//	DrawBorder(buf, 0, 0, 20, 10, style.BorderAll(style.BorderRound, style.Color("#FFFFFF")))
+func DrawBorder(b *render.Buffer, x, y, width, height int, border style.Border) {
+	DrawBorderClipped(b, x, y, width, height, border, render.ClipRect{X: 0, Y: 0, W: b.Width, H: b.Height})
 }
 
 // DrawBorderClipped renders a rectangular border with clipping.
-func (b *Buffer) DrawBorderClipped(x, y, width, height int, border style.Border, clip ClipRect) {
+func DrawBorderClipped(b *render.Buffer, x, y, width, height int, border style.Border, clip render.ClipRect) {
 	if !border.HasAny() || width < 2 || height < 2 {
 		return
 	}
@@ -55,15 +58,15 @@ func (b *Buffer) DrawBorderClipped(x, y, width, height int, border style.Border,
 
 // borderDrawerClipped holds state for drawing a border with clipping.
 type borderDrawerClipped struct {
-	buf                                  *Buffer
-	clip                                 ClipRect
+	buf                                  *render.Buffer
+	clip                                 render.ClipRect
 	x, y, width, height                  int
 	hasTop, hasBottom, hasLeft, hasRight bool
 	border                               style.Border
 }
 
-func (d *borderDrawerClipped) cell(ch rune, color style.Color) Cell {
-	return Cell{Char: ch, Foreground: color}
+func (d *borderDrawerClipped) cell(ch rune, color style.Color) render.Cell {
+	return render.Cell{Char: ch, FG: color.ToRender()}
 }
 
 func (d *borderDrawerClipped) drawCorners() {
@@ -155,7 +158,7 @@ func (d *borderDrawerClipped) drawHorizontalWithTexts(
 	rendered := calculateTextPositions(leftTexts, centerTexts, rightTexts, availableWidth)
 
 	// Build a map of positions to cells
-	charMap := make(map[int]Cell)
+	charMap := make(map[int]render.Cell)
 	for _, rt := range rendered {
 		fg := rt.style.Foreground
 		if !fg.IsSet() {
@@ -164,16 +167,16 @@ func (d *borderDrawerClipped) drawHorizontalWithTexts(
 		for i, r := range rt.runes {
 			pos := rt.startPos + i
 			if pos >= 0 && pos < availableWidth {
-				charMap[pos] = Cell{
-					Char:       r,
-					Foreground: fg,
-					Background: rt.style.Background,
-					Bold:       rt.style.FontWeight.IsBold(),
-					Italic:     rt.style.FontStyle.IsItalic(),
-					Underline:  rt.style.TextDecoration.HasUnderline(),
-					Strike:     rt.style.TextDecoration.HasLineThrough(),
-					Dim:        rt.style.Dim,
-					Reverse:    rt.style.Reverse,
+				charMap[pos] = render.Cell{
+					Char:      r,
+					FG:        fg.ToRender(),
+					BG:        rt.style.Background.ToRender(),
+					Bold:      rt.style.FontWeight.IsBold(),
+					Italic:    rt.style.FontStyle.IsItalic(),
+					Underline: rt.style.TextDecoration.HasUnderline(),
+					Strike:    rt.style.TextDecoration.HasLineThrough(),
+					Dim:       rt.style.Dim,
+					Reverse:   rt.style.Reverse,
 				}
 			}
 		}

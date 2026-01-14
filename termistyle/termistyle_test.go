@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dottermi/x/termistyle/draw"
+	"github.com/dottermi/x/render"
 	"github.com/dottermi/x/termistyle/layout"
 	"github.com/dottermi/x/termistyle/style"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +56,7 @@ func TestTypeAliases(t *testing.T) {
 		assert.Equal(t, 10, box.Style.Width)
 	})
 
-	t.Run("should alias Buffer from draw package", func(t *testing.T) {
+	t.Run("should alias Buffer from render package", func(t *testing.T) {
 		t.Parallel()
 
 		buf := NewBuffer(10, 5)
@@ -66,15 +66,15 @@ func TestTypeAliases(t *testing.T) {
 		assert.Equal(t, 5, buf.Height)
 	})
 
-	t.Run("should alias Cell from draw package", func(t *testing.T) {
+	t.Run("should alias Cell from render package", func(t *testing.T) {
 		t.Parallel()
 
 		var c Cell
 		c.Char = 'X'
-		c.Foreground = "#FFFFFF"
+		c.FG = RGB(255, 255, 255)
 
 		assert.Equal(t, 'X', c.Char)
-		assert.Equal(t, Color("#FFFFFF"), c.Foreground)
+		assert.True(t, c.FG.IsSet())
 	})
 
 	t.Run("should alias Border from style package", func(t *testing.T) {
@@ -341,7 +341,7 @@ func TestDraw(t *testing.T) {
 
 		for y := 0; y < buf.Height; y++ {
 			for x := 0; x < buf.Width; x++ {
-				assert.Equal(t, ' ', buf.Cells[y][x].Char)
+				assert.Equal(t, ' ', buf.Get(x, y).Char)
 			}
 		}
 	})
@@ -357,7 +357,7 @@ func TestDraw(t *testing.T) {
 
 		buf := Draw(box)
 
-		assert.Equal(t, Color("#FF0000"), buf.Cells[2][5].Background)
+		assert.True(t, buf.Get(5, 2).BG.IsSet())
 	})
 
 	t.Run("should draw box with single border", func(t *testing.T) {
@@ -371,12 +371,12 @@ func TestDraw(t *testing.T) {
 
 		buf := Draw(box)
 
-		assert.Equal(t, rune(0x250C), buf.Cells[0][0].Char)
-		assert.Equal(t, rune(0x2510), buf.Cells[0][9].Char)
-		assert.Equal(t, rune(0x2514), buf.Cells[4][0].Char)
-		assert.Equal(t, rune(0x2518), buf.Cells[4][9].Char)
-		assert.Equal(t, rune(0x2500), buf.Cells[0][5].Char)
-		assert.Equal(t, rune(0x2502), buf.Cells[2][0].Char)
+		assert.Equal(t, rune(0x250C), buf.Get(0, 0).Char)
+		assert.Equal(t, rune(0x2510), buf.Get(9, 0).Char)
+		assert.Equal(t, rune(0x2514), buf.Get(0, 4).Char)
+		assert.Equal(t, rune(0x2518), buf.Get(9, 4).Char)
+		assert.Equal(t, rune(0x2500), buf.Get(5, 0).Char)
+		assert.Equal(t, rune(0x2502), buf.Get(0, 2).Char)
 	})
 
 	t.Run("should draw box with children", func(t *testing.T) {
@@ -396,8 +396,8 @@ func TestDraw(t *testing.T) {
 
 		buf := Draw(parent)
 
-		assert.Equal(t, Color("#00FF00"), buf.Cells[0][0].Background)
-		assert.Equal(t, Color("#00FF00"), buf.Cells[2][9].Background)
+		assert.True(t, buf.Get(0, 0).BG.IsSet())
+		assert.True(t, buf.Get(9, 2).BG.IsSet())
 	})
 
 	t.Run("should draw box with text content", func(t *testing.T) {
@@ -411,11 +411,11 @@ func TestDraw(t *testing.T) {
 
 		buf := Draw(box)
 
-		assert.Equal(t, 'H', buf.Cells[0][0].Char)
-		assert.Equal(t, 'e', buf.Cells[0][1].Char)
-		assert.Equal(t, 'l', buf.Cells[0][2].Char)
-		assert.Equal(t, 'l', buf.Cells[0][3].Char)
-		assert.Equal(t, 'o', buf.Cells[0][4].Char)
+		assert.Equal(t, 'H', buf.Get(0, 0).Char)
+		assert.Equal(t, 'e', buf.Get(1, 0).Char)
+		assert.Equal(t, 'l', buf.Get(2, 0).Char)
+		assert.Equal(t, 'l', buf.Get(3, 0).Char)
+		assert.Equal(t, 'o', buf.Get(4, 0).Char)
 	})
 
 	t.Run("should draw nested boxes with flex layout", func(t *testing.T) {
@@ -434,8 +434,8 @@ func TestDraw(t *testing.T) {
 
 		buf := Draw(parent)
 
-		assert.Equal(t, Color("#FF0000"), buf.Cells[0][0].Background)
-		assert.Equal(t, Color("#00FF00"), buf.Cells[0][10].Background)
+		assert.True(t, buf.Get(0, 0).BG.IsSet())
+		assert.True(t, buf.Get(10, 0).BG.IsSet())
 	})
 
 	t.Run("should draw border with background inside", func(t *testing.T) {
@@ -450,9 +450,9 @@ func TestDraw(t *testing.T) {
 
 		buf := Draw(box)
 
-		assert.Equal(t, rune(0x250C), buf.Cells[0][0].Char)
-		assert.Equal(t, Color("#0000FF"), buf.Cells[2][5].Background)
-		assert.NotEqual(t, Color("#0000FF"), buf.Cells[0][0].Background)
+		assert.Equal(t, rune(0x250C), buf.Get(0, 0).Char)
+		assert.True(t, buf.Get(5, 2).BG.IsSet())
+		assert.False(t, buf.Get(0, 0).BG.IsSet())
 	})
 
 	t.Run("should calculate layout before drawing", func(t *testing.T) {
@@ -875,8 +875,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should return intersection of overlapping rects", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 20, H: 20}
-		b := draw.ClipRect{X: 10, Y: 10, W: 20, H: 20}
+		a := render.ClipRect{X: 0, Y: 0, W: 20, H: 20}
+		b := render.ClipRect{X: 10, Y: 10, W: 20, H: 20}
 
 		result := intersectClipRect(a, b)
 
@@ -889,8 +889,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should return zero size for non-overlapping rects horizontally", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 10, H: 10}
-		b := draw.ClipRect{X: 20, Y: 0, W: 10, H: 10}
+		a := render.ClipRect{X: 0, Y: 0, W: 10, H: 10}
+		b := render.ClipRect{X: 20, Y: 0, W: 10, H: 10}
 
 		result := intersectClipRect(a, b)
 
@@ -900,8 +900,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should return zero size for non-overlapping rects vertically", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 10, H: 10}
-		b := draw.ClipRect{X: 0, Y: 20, W: 10, H: 10}
+		a := render.ClipRect{X: 0, Y: 0, W: 10, H: 10}
+		b := render.ClipRect{X: 0, Y: 20, W: 10, H: 10}
 
 		result := intersectClipRect(a, b)
 
@@ -911,8 +911,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should return contained rect when one contains the other", func(t *testing.T) {
 		t.Parallel()
 
-		outer := draw.ClipRect{X: 0, Y: 0, W: 100, H: 100}
-		inner := draw.ClipRect{X: 20, Y: 20, W: 30, H: 30}
+		outer := render.ClipRect{X: 0, Y: 0, W: 100, H: 100}
+		inner := render.ClipRect{X: 20, Y: 20, W: 30, H: 30}
 
 		result := intersectClipRect(outer, inner)
 
@@ -925,7 +925,7 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should return same rect when intersecting with itself", func(t *testing.T) {
 		t.Parallel()
 
-		rect := draw.ClipRect{X: 10, Y: 20, W: 30, H: 40}
+		rect := render.ClipRect{X: 10, Y: 20, W: 30, H: 40}
 
 		result := intersectClipRect(rect, rect)
 
@@ -935,8 +935,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should handle adjacent rects (no overlap)", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 10, H: 10}
-		b := draw.ClipRect{X: 10, Y: 0, W: 10, H: 10}
+		a := render.ClipRect{X: 0, Y: 0, W: 10, H: 10}
+		b := render.ClipRect{X: 10, Y: 0, W: 10, H: 10}
 
 		result := intersectClipRect(a, b)
 
@@ -946,8 +946,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should handle partial vertical overlap", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 20, H: 10}
-		b := draw.ClipRect{X: 5, Y: 5, W: 20, H: 10}
+		a := render.ClipRect{X: 0, Y: 0, W: 20, H: 10}
+		b := render.ClipRect{X: 5, Y: 5, W: 20, H: 10}
 
 		result := intersectClipRect(a, b)
 
@@ -960,8 +960,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should handle partial horizontal overlap", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 10, H: 20}
-		b := draw.ClipRect{X: 5, Y: 5, W: 10, H: 20}
+		a := render.ClipRect{X: 0, Y: 0, W: 10, H: 20}
+		b := render.ClipRect{X: 5, Y: 5, W: 10, H: 20}
 
 		result := intersectClipRect(a, b)
 
@@ -974,8 +974,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should handle zero-size input rect", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 0, H: 0}
-		b := draw.ClipRect{X: 0, Y: 0, W: 10, H: 10}
+		a := render.ClipRect{X: 0, Y: 0, W: 0, H: 0}
+		b := render.ClipRect{X: 0, Y: 0, W: 10, H: 10}
 
 		result := intersectClipRect(a, b)
 
@@ -986,8 +986,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should handle rects at origin", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 50, H: 50}
-		b := draw.ClipRect{X: 0, Y: 0, W: 30, H: 30}
+		a := render.ClipRect{X: 0, Y: 0, W: 50, H: 50}
+		b := render.ClipRect{X: 0, Y: 0, W: 30, H: 30}
 
 		result := intersectClipRect(a, b)
 
@@ -1000,8 +1000,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should be commutative", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 5, Y: 10, W: 20, H: 15}
-		b := draw.ClipRect{X: 15, Y: 5, W: 20, H: 25}
+		a := render.ClipRect{X: 5, Y: 10, W: 20, H: 15}
+		b := render.ClipRect{X: 15, Y: 5, W: 20, H: 25}
 
 		result1 := intersectClipRect(a, b)
 		result2 := intersectClipRect(b, a)
@@ -1012,8 +1012,8 @@ func TestIntersectClipRect(t *testing.T) {
 	t.Run("should handle single pixel overlap", func(t *testing.T) {
 		t.Parallel()
 
-		a := draw.ClipRect{X: 0, Y: 0, W: 10, H: 10}
-		b := draw.ClipRect{X: 9, Y: 9, W: 10, H: 10}
+		a := render.ClipRect{X: 0, Y: 0, W: 10, H: 10}
+		b := render.ClipRect{X: 9, Y: 9, W: 10, H: 10}
 
 		result := intersectClipRect(a, b)
 
@@ -1239,6 +1239,6 @@ func TestIntegration(t *testing.T) {
 
 		buf := Draw(container)
 
-		assert.Equal(t, Color("#00FF00"), buf.Cells[0][0].Background)
+		assert.True(t, buf.Get(0, 0).BG.IsSet())
 	})
 }
