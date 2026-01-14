@@ -22,7 +22,10 @@
 //	fmt.Print(output)
 package render
 
-import "fmt"
+import (
+	"io"
+	"strconv"
+)
 
 // Color represents an RGB color for terminal rendering with optional default fallback.
 // Use [RGB] to create explicit colors or [Default] for terminal defaults.
@@ -66,7 +69,7 @@ func (c Color) FGCode() string {
 	if !c.Set {
 		return "\x1b[39m"
 	}
-	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", c.R, c.G, c.B)
+	return c.buildCode("\x1b[38;2;")
 }
 
 // BGCode returns the ANSI escape sequence for setting this color as background.
@@ -75,5 +78,53 @@ func (c Color) BGCode() string {
 	if !c.Set {
 		return "\x1b[49m"
 	}
-	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", c.R, c.G, c.B)
+	return c.buildCode("\x1b[48;2;")
+}
+
+// buildCode constructs an ANSI color code with the given prefix.
+func (c Color) buildCode(prefix string) string {
+	// "\x1b[38;2;255;255;255m" = 19 bytes max
+	buf := make([]byte, 0, 19)
+	buf = append(buf, prefix...)
+	buf = strconv.AppendUint(buf, uint64(c.R), 10)
+	buf = append(buf, ';')
+	buf = strconv.AppendUint(buf, uint64(c.G), 10)
+	buf = append(buf, ';')
+	buf = strconv.AppendUint(buf, uint64(c.B), 10)
+	buf = append(buf, 'm')
+	return string(buf)
+}
+
+// WriteFGTo writes the foreground ANSI escape sequence directly to w.
+// This avoids string allocation compared to FGCode().
+func (c Color) WriteFGTo(w io.Writer) {
+	if !c.Set {
+		_, _ = io.WriteString(w, "\x1b[39m")
+		return
+	}
+	c.writeCodeTo(w, "\x1b[38;2;")
+}
+
+// WriteBGTo writes the background ANSI escape sequence directly to w.
+// This avoids string allocation compared to BGCode().
+func (c Color) WriteBGTo(w io.Writer) {
+	if !c.Set {
+		_, _ = io.WriteString(w, "\x1b[49m")
+		return
+	}
+	c.writeCodeTo(w, "\x1b[48;2;")
+}
+
+// writeCodeTo writes an ANSI color code with the given prefix to w.
+func (c Color) writeCodeTo(w io.Writer, prefix string) {
+	var buf [19]byte
+	b := buf[:0]
+	b = append(b, prefix...)
+	b = strconv.AppendUint(b, uint64(c.R), 10)
+	b = append(b, ';')
+	b = strconv.AppendUint(b, uint64(c.G), 10)
+	b = append(b, ';')
+	b = strconv.AppendUint(b, uint64(c.B), 10)
+	b = append(b, 'm')
+	_, _ = w.Write(b)
 }

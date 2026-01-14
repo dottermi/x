@@ -1,6 +1,9 @@
 package render
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 // BenchmarkColorFGCode measures foreground ANSI code generation.
 func BenchmarkColorFGCode(b *testing.B) {
@@ -93,4 +96,50 @@ func BenchmarkEmptyCell(b *testing.B) {
 	for b.Loop() {
 		_ = EmptyCell()
 	}
+}
+
+// BenchmarkColorWriteFGTo measures zero-alloc foreground writing.
+func BenchmarkColorWriteFGTo(b *testing.B) {
+	var buf bytes.Buffer
+
+	b.Run("Set", func(b *testing.B) {
+		c := RGB(128, 64, 255)
+		b.ReportAllocs()
+		for b.Loop() {
+			buf.Reset()
+			c.WriteFGTo(&buf)
+		}
+	})
+
+	b.Run("Default", func(b *testing.B) {
+		c := Default()
+		b.ReportAllocs()
+		for b.Loop() {
+			buf.Reset()
+			c.WriteFGTo(&buf)
+		}
+	})
+}
+
+// BenchmarkColorWriteBGTo measures zero-alloc background writing.
+func BenchmarkColorWriteBGTo(b *testing.B) {
+	var buf bytes.Buffer
+
+	b.Run("Set", func(b *testing.B) {
+		c := RGB(128, 64, 255)
+		b.ReportAllocs()
+		for b.Loop() {
+			buf.Reset()
+			c.WriteBGTo(&buf)
+		}
+	})
+
+	b.Run("Default", func(b *testing.B) {
+		c := Default()
+		b.ReportAllocs()
+		for b.Loop() {
+			buf.Reset()
+			c.WriteBGTo(&buf)
+		}
+	})
 }

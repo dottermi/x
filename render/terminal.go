@@ -23,11 +23,11 @@ func writeAttr(w io.Writer, val bool, on, off string) {
 // writeDiffColors writes ANSI codes for foreground and background color differences.
 func writeDiffColors(w io.Writer, last *cellStyle, cell Cell, firstCell bool) {
 	if firstCell || cell.FG != last.FG {
-		_, _ = io.WriteString(w, cell.FG.FGCode())
+		cell.FG.WriteFGTo(w)
 		last.FG = cell.FG
 	}
 	if firstCell || cell.BG != last.BG {
-		_, _ = io.WriteString(w, cell.BG.BGCode())
+		cell.BG.WriteBGTo(w)
 		last.BG = cell.BG
 	}
 }
