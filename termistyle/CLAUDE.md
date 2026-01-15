@@ -70,3 +70,39 @@ buf.Get(x, y)      // returns Cell
 buf.Set(x, y, c)   // sets Cell
 buf.SetClipped(x, y, c, clip)  // sets with clipping bounds
 ```
+
+## Terminal Blues Color Palette
+
+Use this palette for examples and tests. Based on "Terminal Blues" by PropFeds.
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| Background | `#0f0f1b` | Main background |
+| Dark Blue | `#1a1a2e` | Dark areas, secondary bg |
+| Medium Blue | `#3a4a6a` | Walls, blocks, borders |
+| Cyan | `#5aacac` | Water, highlights, links |
+| Dark Green | `#2a5a2a` | Dark elements |
+| Green | `#4a8a4a` | Success, positive |
+| Bright Green | `#6aba6a` | Bright highlights |
+| Orange/Gold | `#d4a020` | Player, focus, warnings |
+| Red | `#c83737` | Errors, health, danger |
+| Pink | `#c85a8a` | UI accents, special |
+| Brown | `#8a6a3a` | Earth tones, secondary |
+| White | `#c8c8d0` | Primary text |
+| Gray | `#6a6a7a` | Secondary text, disabled |
+
+```go
+// Example usage
+const (
+    ColorBg      = style.Color("#0f0f1b")
+    ColorDark    = style.Color("#1a1a2e")
+    ColorBlue    = style.Color("#3a4a6a")
+    ColorCyan    = style.Color("#5aacac")
+    ColorGreen   = style.Color("#4a8a4a")
+    ColorOrange  = style.Color("#d4a020")
+    ColorRed     = style.Color("#c83737")
+    ColorPink    = style.Color("#c85a8a")
+    ColorText    = style.Color("#c8c8d0")
+    ColorMuted   = style.Color("#6a6a7a")
+)
+```
