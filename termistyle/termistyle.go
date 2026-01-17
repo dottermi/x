@@ -298,7 +298,7 @@ func drawTextContent(buf *render.Buffer, box *layout.Box, clip render.ClipRect) 
 	innerY := box.Y + top
 	innerWidth := box.W - left - right
 	innerHeight := box.H - top - bottom
-	draw.DrawStyledTextInBoxClipped(buf, innerX, innerY, box.Content, innerWidth, innerHeight, box.Style, clip)
+	draw.StyledTextInBoxClipped(buf, innerX, innerY, box.Content, innerWidth, innerHeight, box.Style, clip)
 }
 
 // calculateChildClip computes the clip bounds for children.
@@ -316,7 +316,7 @@ func calculateChildClip(box *layout.Box, parentClip render.ClipRect) render.Clip
 
 func drawBoxClipped(buf *render.Buffer, box *layout.Box, clip render.ClipRect) {
 	drawBackground(buf, box, clip)
-	draw.DrawBorderClipped(buf, box.X, box.Y, box.W, box.H, box.Style.Border, clip)
+	draw.BorderClipped(buf, box.X, box.Y, box.W, box.H, box.Style.Border, clip)
 	drawTextContent(buf, box, clip)
 
 	childClip := calculateChildClip(box, clip)

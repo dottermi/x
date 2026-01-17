@@ -11,7 +11,7 @@ import (
 
 // text.go tests
 
-func TestDrawText(t *testing.T) {
+func TestText(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should render text at position", func(t *testing.T) {
@@ -21,7 +21,7 @@ func TestDrawText(t *testing.T) {
 		fg := style.Color("#FFFFFF")
 		bg := style.Color("#000000")
 
-		DrawText(buf, 5, 2, "Hello", fg, bg)
+		Text(buf, 5, 2, "Hello", fg, bg)
 
 		assert.Equal(t, 'H', buf.Get(5, 2).Char)
 		assert.Equal(t, 'e', buf.Get(6, 2).Char)
@@ -37,7 +37,7 @@ func TestDrawText(t *testing.T) {
 
 		buf := render.NewBuffer(10, 5)
 
-		DrawText(buf, 7, 2, "Hello", style.Color(""), style.Color(""))
+		Text(buf, 7, 2, "Hello", style.Color(""), style.Color(""))
 
 		assert.Equal(t, 'H', buf.Get(7, 2).Char)
 		assert.Equal(t, 'e', buf.Get(8, 2).Char)
@@ -49,7 +49,7 @@ func TestDrawText(t *testing.T) {
 
 		buf := render.NewBuffer(10, 5)
 
-		DrawText(buf, 5, 2, "", style.Color(""), style.Color(""))
+		Text(buf, 5, 2, "", style.Color(""), style.Color(""))
 
 		assert.Equal(t, ' ', buf.Get(5, 2).Char)
 	})
@@ -59,7 +59,7 @@ func TestDrawText(t *testing.T) {
 
 		buf := render.NewBuffer(20, 5)
 
-		DrawText(buf, 0, 0, "日本語", style.Color(""), style.Color(""))
+		Text(buf, 0, 0, "日本語", style.Color(""), style.Color(""))
 
 		assert.Equal(t, '日', buf.Get(0, 0).Char)
 		assert.Equal(t, '本', buf.Get(1, 0).Char)
@@ -71,7 +71,7 @@ func TestDrawText(t *testing.T) {
 
 		buf := render.NewBuffer(10, 5)
 
-		DrawText(buf, 0, 0, "ABC", style.Color(""), style.Color(""))
+		Text(buf, 0, 0, "ABC", style.Color(""), style.Color(""))
 
 		assert.Equal(t, 'A', buf.Get(0, 0).Char)
 		assert.Equal(t, 'B', buf.Get(1, 0).Char)
@@ -79,7 +79,7 @@ func TestDrawText(t *testing.T) {
 	})
 }
 
-func TestDrawStyledText(t *testing.T) {
+func TestStyledText(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should render text with style attributes", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestDrawStyledText(t *testing.T) {
 			TextDecoration: style.DecorationUnderline,
 		}
 
-		DrawStyledText(buf, 0, 0, "Test", s)
+		StyledText(buf, 0, 0, "Test", s)
 
 		cell := buf.Get(0, 0)
 		assert.Equal(t, 'T', cell.Char)
@@ -113,7 +113,7 @@ func TestDrawStyledText(t *testing.T) {
 			TextTransform: style.TransformUppercase,
 		}
 
-		DrawStyledText(buf, 0, 0, "hello", s)
+		StyledText(buf, 0, 0, "hello", s)
 
 		assert.Equal(t, 'H', buf.Get(0, 0).Char)
 		assert.Equal(t, 'E', buf.Get(1, 0).Char)
@@ -130,7 +130,7 @@ func TestDrawStyledText(t *testing.T) {
 			TextTransform: style.TransformLowercase,
 		}
 
-		DrawStyledText(buf, 0, 0, "HELLO", s)
+		StyledText(buf, 0, 0, "HELLO", s)
 
 		assert.Equal(t, 'h', buf.Get(0, 0).Char)
 		assert.Equal(t, 'e', buf.Get(1, 0).Char)
@@ -145,7 +145,7 @@ func TestDrawStyledText(t *testing.T) {
 			Reverse: true,
 		}
 
-		DrawStyledText(buf, 0, 0, "X", s)
+		StyledText(buf, 0, 0, "X", s)
 
 		cell := buf.Get(0, 0)
 		assert.True(t, cell.Dim)
@@ -160,7 +160,7 @@ func TestDrawStyledText(t *testing.T) {
 			TextDecoration: style.DecorationLineThrough,
 		}
 
-		DrawStyledText(buf, 0, 0, "Strike", s)
+		StyledText(buf, 0, 0, "Strike", s)
 
 		assert.True(t, buf.Get(0, 0).Strike)
 	})
@@ -487,7 +487,7 @@ func Test_wrapByChar(t *testing.T) {
 
 // border.go tests
 
-func TestDrawBorder(t *testing.T) {
+func TestBorder(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should draw single border", func(t *testing.T) {
@@ -496,7 +496,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderSingle)
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, '┌', buf.Get(0, 0).Char)
 		assert.Equal(t, '┐', buf.Get(9, 0).Char)
@@ -512,7 +512,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderRound)
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, '╭', buf.Get(0, 0).Char)
 		assert.Equal(t, '╮', buf.Get(9, 0).Char)
@@ -526,7 +526,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderDouble)
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, '╔', buf.Get(0, 0).Char)
 		assert.Equal(t, '╗', buf.Get(9, 0).Char)
@@ -542,7 +542,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderBold)
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, '┏', buf.Get(0, 0).Char)
 		assert.Equal(t, '┓', buf.Get(9, 0).Char)
@@ -558,7 +558,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAllWithColor(style.BorderSingle, style.Color("#FF0000"))
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.True(t, buf.Get(0, 0).FG.IsSet())
 		assert.True(t, buf.Get(5, 0).FG.IsSet())
@@ -571,7 +571,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.Border{}
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, ' ', buf.Get(0, 0).Char)
 	})
@@ -582,7 +582,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderSingle)
 
-		DrawBorder(buf, 0, 0, 1, 5, border)
+		Border(buf, 0, 0, 1, 5, border)
 
 		assert.Equal(t, ' ', buf.Get(0, 0).Char)
 	})
@@ -593,7 +593,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderSingle)
 
-		DrawBorder(buf, 0, 0, 10, 1, border)
+		Border(buf, 0, 0, 10, 1, border)
 
 		assert.Equal(t, ' ', buf.Get(0, 0).Char)
 	})
@@ -604,7 +604,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(10, 5)
 		border := style.BorderAll(style.BorderSingle)
 
-		DrawBorder(buf, 0, 0, 2, 2, border)
+		Border(buf, 0, 0, 2, 2, border)
 
 		assert.Equal(t, '┌', buf.Get(0, 0).Char)
 		assert.Equal(t, '┐', buf.Get(1, 0).Char)
@@ -618,7 +618,7 @@ func TestDrawBorder(t *testing.T) {
 		buf := render.NewBuffer(15, 10)
 		border := style.BorderAll(style.BorderSingle)
 
-		DrawBorder(buf, 3, 2, 8, 5, border)
+		Border(buf, 3, 2, 8, 5, border)
 
 		assert.Equal(t, '┌', buf.Get(3, 2).Char)
 		assert.Equal(t, '┐', buf.Get(10, 2).Char)
@@ -634,7 +634,7 @@ func TestDrawBorder(t *testing.T) {
 		edge := style.BorderEdge{Style: style.BorderSingle}
 		border := style.Border{Top: edge, Bottom: edge}
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, '─', buf.Get(0, 0).Char)
 		assert.Equal(t, '─', buf.Get(0, 4).Char)
@@ -648,7 +648,7 @@ func TestDrawBorder(t *testing.T) {
 		edge := style.BorderEdge{Style: style.BorderSingle}
 		border := style.Border{Left: edge, Right: edge}
 
-		DrawBorder(buf, 0, 0, 10, 5, border)
+		Border(buf, 0, 0, 10, 5, border)
 
 		assert.Equal(t, '│', buf.Get(0, 0).Char)
 		assert.Equal(t, '│', buf.Get(9, 0).Char)
@@ -656,7 +656,7 @@ func TestDrawBorder(t *testing.T) {
 	})
 }
 
-func TestDrawBorder_WithTitle(t *testing.T) {
+func TestBorder_WithTitle(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should render left-aligned title on top border", func(t *testing.T) {
@@ -665,7 +665,7 @@ func TestDrawBorder_WithTitle(t *testing.T) {
 		buf := render.NewBuffer(20, 5)
 		border := style.BorderAllWithTitle(style.BorderSingle, style.Color("#FFFFFF"), "Title")
 
-		DrawBorder(buf, 0, 0, 20, 5, border)
+		Border(buf, 0, 0, 20, 5, border)
 
 		assert.Equal(t, '┌', buf.Get(0, 0).Char)
 		assert.Equal(t, '─', buf.Get(1, 0).Char)
@@ -688,7 +688,7 @@ func TestDrawBorder_WithTitle(t *testing.T) {
 		border := style.BorderAll(style.BorderSingle)
 		border.Top = topEdge
 
-		DrawBorder(buf, 0, 0, 20, 5, border)
+		Border(buf, 0, 0, 20, 5, border)
 
 		assert.Equal(t, 't', buf.Get(16, 0).Char)
 		assert.Equal(t, ' ', buf.Get(17, 0).Char)
@@ -704,7 +704,7 @@ func TestDrawBorder_WithTitle(t *testing.T) {
 		border := style.BorderAll(style.BorderSingle)
 		border.Top = topEdge
 
-		DrawBorder(buf, 0, 0, 20, 5, border)
+		Border(buf, 0, 0, 20, 5, border)
 
 		foundH := false
 		for x := 1; x < 19; x++ {

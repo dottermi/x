@@ -5,7 +5,7 @@ import (
 	"github.com/dottermi/x/termistyle/style"
 )
 
-// DrawBorder renders a rectangular border using box-drawing characters.
+// Border renders a rectangular border using box-drawing characters.
 // Each side can have a different style and color.
 //
 // Parameters:
@@ -15,13 +15,13 @@ import (
 //
 // Example:
 //
-//	DrawBorder(buf, 0, 0, 20, 10, style.BorderAll(style.BorderRound, style.Color("#FFFFFF")))
-func DrawBorder(b *render.Buffer, x, y, width, height int, border style.Border) {
-	DrawBorderClipped(b, x, y, width, height, border, render.ClipRect{X: 0, Y: 0, W: b.Width, H: b.Height})
+//	draw.Border(buf, 0, 0, 20, 10, style.BorderAll(style.BorderRound, style.Color("#FFFFFF")))
+func Border(b *render.Buffer, x, y, width, height int, border style.Border) {
+	BorderClipped(b, x, y, width, height, border, render.ClipRect{X: 0, Y: 0, W: b.Width, H: b.Height})
 }
 
-// DrawBorderClipped renders a rectangular border with clipping.
-func DrawBorderClipped(b *render.Buffer, x, y, width, height int, border style.Border, clip render.ClipRect) {
+// BorderClipped renders a rectangular border with clipping.
+func BorderClipped(b *render.Buffer, x, y, width, height int, border style.Border, clip render.ClipRect) {
 	if !border.HasAny() || width < 2 || height < 2 {
 		return
 	}

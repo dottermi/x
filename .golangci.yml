@@ -66,6 +66,7 @@ linters:
     generated: lax
     paths:
       - examples/
+      - /tests/integration/
     rules:
       - linters:
           - revive
@@ -134,3 +135,4 @@ formatters:
       - third_party$
       - builtin$
       - examples/
+      - /tests/integration/
