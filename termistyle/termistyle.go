@@ -17,9 +17,9 @@ package termistyle
 import (
 	"io"
 
+	"github.com/dottermi/x/render"
 	"github.com/dottermi/x/termistyle/draw"
 	"github.com/dottermi/x/termistyle/layout"
-	"github.com/dottermi/x/termistyle/render"
 	"github.com/dottermi/x/termistyle/style"
 )
 
@@ -35,9 +35,13 @@ type (
 	// Box is a rectangular layout element that can contain children.
 	Box = layout.Box
 	// Buffer is a 2D grid of cells for composing terminal output.
-	Buffer = draw.Buffer
+	Buffer = render.Buffer
 	// Cell represents a single character position with colors.
-	Cell = draw.Cell
+	Cell = render.Cell
+	// ClipRect defines a rectangular clipping region.
+	ClipRect = render.ClipRect
+	// Terminal manages double-buffered rendering with diff-based optimization.
+	Terminal = render.Terminal
 	// FontWeight represents text boldness (100-900, >= 600 is bold).
 	FontWeight = style.FontWeight
 	// FontStyle represents text style (normal, italic, oblique).
@@ -101,11 +105,11 @@ var (
 	// Text creates a text element with content and style.
 	Text = layout.NewText
 	// NewBuffer creates a buffer filled with space characters.
-	NewBuffer = draw.NewBuffer
-	// Render converts a buffer to an ANSI-escaped string.
-	Render = render.Render
-	// RenderTo writes a buffer to an io.Writer with ANSI escape codes.
-	RenderTo = render.To
+	NewBuffer = render.NewBuffer
+	// NewTerminal creates a Terminal renderer for the specified dimensions.
+	NewTerminal = render.NewTerminal
+	// RGB creates a render.Color with the specified RGB values.
+	RGB = render.RGB
 )
 
 // Border style constants select box-drawing character sets.
@@ -238,13 +242,13 @@ const (
 //
 //	box := termistyle.NewBox(termistyle.Style{Width: 40, Height: 10})
 //	buf := termistyle.Draw(box)
-//	termistyle.RenderTo(buf, os.Stdout)
-func Draw(box *layout.Box) *draw.Buffer {
+//	term.Render(buf)
+func Draw(box *layout.Box) *render.Buffer {
 	box.Calculate()
 
-	buf := draw.NewBuffer(box.W, box.H)
+	buf := render.NewBuffer(box.W, box.H)
 	// Start with full buffer as clip bounds
-	clip := draw.ClipRect{X: 0, Y: 0, W: box.W, H: box.H}
+	clip := render.ClipRect{X: 0, Y: 0, W: box.W, H: box.H}
 	drawBoxClipped(buf, box, clip)
 
 	return buf
@@ -268,24 +272,24 @@ func borderOffsets(border style.Border) (top, right, bottom, left int) {
 }
 
 // drawBackground fills the box interior with the background color.
-func drawBackground(buf *draw.Buffer, box *layout.Box, clip draw.ClipRect) {
+func drawBackground(buf *render.Buffer, box *layout.Box, clip render.ClipRect) {
 	if !box.Style.Background.IsSet() {
 		return
 	}
 	top, right, bottom, left := borderOffsets(box.Style.Border)
 	for y := top; y < box.H-bottom; y++ {
 		for x := left; x < box.W-right; x++ {
-			buf.SetClipped(box.X+x, box.Y+y, draw.Cell{
-				Char:       ' ',
-				Background: box.Style.Background,
-				Foreground: box.Style.Foreground,
+			buf.SetClipped(box.X+x, box.Y+y, render.Cell{
+				Char: ' ',
+				BG:   box.Style.Background.ToRender(),
+				FG:   box.Style.Foreground.ToRender(),
 			}, clip)
 		}
 	}
 }
 
 // drawTextContent renders text content within the box.
-func drawTextContent(buf *draw.Buffer, box *layout.Box, clip draw.ClipRect) {
+func drawTextContent(buf *render.Buffer, box *layout.Box, clip render.ClipRect) {
 	if box.Content == "" {
 		return
 	}
@@ -294,11 +298,11 @@ func drawTextContent(buf *draw.Buffer, box *layout.Box, clip draw.ClipRect) {
 	innerY := box.Y + top
 	innerWidth := box.W - left - right
 	innerHeight := box.H - top - bottom
-	buf.DrawStyledTextInBoxClipped(innerX, innerY, box.Content, innerWidth, innerHeight, box.Style, clip)
+	draw.StyledTextInBoxClipped(buf, innerX, innerY, box.Content, innerWidth, innerHeight, box.Style, clip)
 }
 
 // calculateChildClip computes the clip bounds for children.
-func calculateChildClip(box *layout.Box, parentClip draw.ClipRect) draw.ClipRect {
+func calculateChildClip(box *layout.Box, parentClip render.ClipRect) render.ClipRect {
 	if box.Style.Overflow != style.OverflowHidden {
 		return parentClip
 	}
@@ -307,12 +311,12 @@ func calculateChildClip(box *layout.Box, parentClip draw.ClipRect) draw.ClipRect
 	innerY := box.Y + top
 	innerW := box.W - left - right
 	innerH := box.H - top - bottom
-	return intersectClipRect(parentClip, draw.ClipRect{X: innerX, Y: innerY, W: innerW, H: innerH})
+	return intersectClipRect(parentClip, render.ClipRect{X: innerX, Y: innerY, W: innerW, H: innerH})
 }
 
-func drawBoxClipped(buf *draw.Buffer, box *layout.Box, clip draw.ClipRect) {
+func drawBoxClipped(buf *render.Buffer, box *layout.Box, clip render.ClipRect) {
 	drawBackground(buf, box, clip)
-	buf.DrawBorderClipped(box.X, box.Y, box.W, box.H, box.Style.Border, clip)
+	draw.BorderClipped(buf, box.X, box.Y, box.W, box.H, box.Style.Border, clip)
 	drawTextContent(buf, box, clip)
 
 	childClip := calculateChildClip(box, clip)
@@ -359,7 +363,7 @@ func sortByZIndex(children []*layout.Box) []*layout.Box {
 }
 
 // intersectClipRect returns the intersection of two clip rects.
-func intersectClipRect(a, b draw.ClipRect) draw.ClipRect {
+func intersectClipRect(a, b render.ClipRect) render.ClipRect {
 	x := max(a.X, b.X)
 	y := max(a.Y, b.Y)
 	x2 := min(a.X+a.W, b.X+b.W)
@@ -374,11 +378,11 @@ func intersectClipRect(a, b draw.ClipRect) draw.ClipRect {
 		h = 0
 	}
 
-	return draw.ClipRect{X: x, Y: y, W: w, H: h}
+	return render.ClipRect{X: x, Y: y, W: w, H: h}
 }
 
 // Print renders a box tree directly to a writer in one step.
-// Combines Draw and RenderTo for common use cases.
+// Combines Draw and RenderFullTo for common use cases.
 // Outputs ANSI escape sequences for colors and positioning.
 //
 // Example:
@@ -391,11 +395,12 @@ func intersectClipRect(a, b draw.ClipRect) draw.ClipRect {
 //	ts.Print(os.Stdout, container)
 func Print(w io.Writer, box *layout.Box) {
 	buf := Draw(box)
-	render.To(buf, w)
+	term := render.NewTerminal(buf.Width, buf.Height)
+	term.RenderFullTo(buf, w)
 }
 
 // Println renders a box tree to a writer and appends a newline.
-// Combines Draw and RenderTo, adding a newline after rendering.
+// Combines Draw and RenderFullTo, adding a newline after rendering.
 //
 // Example:
 //
@@ -407,6 +412,21 @@ func Print(w io.Writer, box *layout.Box) {
 //	ts.Println(os.Stdout, container)
 func Println(w io.Writer, box *layout.Box) {
 	buf := Draw(box)
-	render.To(buf, w)
+	term := render.NewTerminal(buf.Width, buf.Height)
+	term.RenderFullTo(buf, w)
 	_, _ = w.Write([]byte("\n"))
+}
+
+// Render converts a buffer to an ANSI-escaped string using full rendering.
+// This is a convenience function for simple cases.
+func Render(buf *render.Buffer) string {
+	term := render.NewTerminal(buf.Width, buf.Height)
+	return term.RenderFull(buf)
+}
+
+// RenderTo writes a buffer to an io.Writer with ANSI escape codes.
+// This is a convenience function for simple cases.
+func RenderTo(buf *render.Buffer, w io.Writer) {
+	term := render.NewTerminal(buf.Width, buf.Height)
+	term.RenderFullTo(buf, w)
 }
