@@ -74,35 +74,34 @@ buf.SetClipped(x, y, c, clip)  // sets with clipping bounds
 ## Terminal Blues Color Palette
 
 Use this palette for examples and tests. Based on "Terminal Blues" by PropFeds.
+Blue tones only for a cohesive, monochromatic look.
 
 | Name | Hex | Usage |
 |------|-----|-------|
-| Background | `#0f0f1b` | Main background |
-| Dark Blue | `#1a1a2e` | Dark areas, secondary bg |
-| Medium Blue | `#3a4a6a` | Walls, blocks, borders |
-| Cyan | `#5aacac` | Water, highlights, links |
-| Dark Green | `#2a5a2a` | Dark elements |
-| Green | `#4a8a4a` | Success, positive |
-| Bright Green | `#6aba6a` | Bright highlights |
-| Orange/Gold | `#d4a020` | Player, focus, warnings |
-| Red | `#c83737` | Errors, health, danger |
-| Pink | `#c85a8a` | UI accents, special |
-| Brown | `#8a6a3a` | Earth tones, secondary |
-| White | `#c8c8d0` | Primary text |
-| Gray | `#6a6a7a` | Secondary text, disabled |
+| Background | `#0f0f1b` | Darkest background |
+| Dark | `#1a1a2e` | Dark blue, surface bg |
+| Dark2 | `#252542` | Slightly lighter dark |
+| Blue | `#3a4a6a` | Medium blue, borders |
+| Blue2 | `#4a5a7a` | Lighter medium blue |
+| Cyan | `#5aacac` | Cyan highlight, accent |
+| Cyan2 | `#7acaca` | Light cyan |
+| Text | `#c8c8d0` | Primary text |
+| Muted | `#6a6a7a` | Secondary text, disabled |
 
 ```go
-// Example usage
+// Example usage - import from tests/integration/helper
 const (
-    ColorBg      = style.Color("#0f0f1b")
-    ColorDark    = style.Color("#1a1a2e")
-    ColorBlue    = style.Color("#3a4a6a")
-    ColorCyan    = style.Color("#5aacac")
-    ColorGreen   = style.Color("#4a8a4a")
-    ColorOrange  = style.Color("#d4a020")
-    ColorRed     = style.Color("#c83737")
-    ColorPink    = style.Color("#c85a8a")
-    ColorText    = style.Color("#c8c8d0")
-    ColorMuted   = style.Color("#6a6a7a")
+    ColorBg      = style.Color("#0f0f1b") // Darkest background
+    ColorDark    = style.Color("#1a1a2e") // Dark blue
+    ColorDark2   = style.Color("#252542") // Slightly lighter
+    ColorBlue    = style.Color("#3a4a6a") // Medium blue
+    ColorBlue2   = style.Color("#4a5a7a") // Lighter medium blue
+    ColorCyan    = style.Color("#5aacac") // Cyan highlight
+    ColorCyan2   = style.Color("#7acaca") // Light cyan
+    ColorText    = style.Color("#c8c8d0") // Primary text
+    ColorMuted   = style.Color("#6a6a7a") // Muted text
+    ColorBorder  = style.Color("#3a4a6a") // Border color
+    ColorAccent  = style.Color("#5aacac") // Accent color
+    ColorSurface = style.Color("#1a1a2e") // Surface/card background
 )
 ```

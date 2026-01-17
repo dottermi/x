@@ -16,8 +16,8 @@ func TestGolden_Text(t *testing.T) {
 	// Basic text with colors
 	draw.DrawText(buf, 0, 0, "Basic Text", ColorText, ColorBg)
 	draw.DrawText(buf, 0, 1, "Cyan", ColorCyan, ColorBg)
-	draw.DrawText(buf, 0, 2, "Green", ColorGreen, ColorBg)
-	draw.DrawText(buf, 0, 3, "Orange", ColorOrange, ColorBg)
+	draw.DrawText(buf, 0, 2, "Cyan2", ColorCyan2, ColorBg)
+	draw.DrawText(buf, 0, 3, "Blue", ColorBlue, ColorBg)
 
 	// Bold
 	draw.DrawStyledText(buf, 0, 5, "Bold", style.Style{
@@ -85,7 +85,7 @@ func TestGolden_Text(t *testing.T) {
 
 	// Ellipsis
 	draw.DrawStyledTextInWidth(buf, 0, 18, "Text with ellipsis overflow", 15, style.Style{
-		Foreground:   ColorOrange,
+		Foreground:   ColorAccent,
 		TextOverflow: style.TextOverflowEllipsis,
 	})
 
