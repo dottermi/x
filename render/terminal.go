@@ -217,7 +217,36 @@ func (t *Terminal) RenderFull(buf *Buffer) string {
 //   - w: destination for ANSI output
 func (t *Terminal) RenderFullTo(buf *Buffer, w io.Writer) {
 	_, _ = io.WriteString(w, MoveCursor(0, 0))
+	t.renderBufferTo(buf, w)
+}
 
+// RenderInline renders the entire buffer without cursor positioning.
+// Use this for inline output (e.g., printing styled text to stdout)
+// where cursor positioning is not desired.
+//
+// Example:
+//
+//	buf := render.NewBuffer(20, 1)
+//	buf.Set(0, 0, render.Cell{Char: 'H', Bold: true})
+//	fmt.Print(term.RenderInline(buf))
+func (t *Terminal) RenderInline(buf *Buffer) string {
+	var sb strings.Builder
+	t.RenderInlineTo(buf, &sb)
+	return sb.String()
+}
+
+// RenderInlineTo writes the buffer to w without cursor positioning.
+// Prefer this over [Terminal.RenderInline] to avoid intermediate string allocation.
+//
+// Parameters:
+//   - buf: the buffer to render
+//   - w: destination for ANSI output
+func (t *Terminal) RenderInlineTo(buf *Buffer, w io.Writer) {
+	t.renderBufferTo(buf, w)
+}
+
+// renderBufferTo is the shared implementation for full and inline rendering.
+func (t *Terminal) renderBufferTo(buf *Buffer, w io.Writer) {
 	var style cellStyle
 	firstCell := true
 

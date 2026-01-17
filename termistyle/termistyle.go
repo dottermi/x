@@ -417,16 +417,16 @@ func Println(w io.Writer, box *layout.Box) {
 	_, _ = w.Write([]byte("\n"))
 }
 
-// Render converts a buffer to an ANSI-escaped string using full rendering.
-// This is a convenience function for simple cases.
+// Render converts a buffer to an ANSI-escaped string for inline output.
+// This is a convenience function for simple cases where cursor positioning is not needed.
 func Render(buf *render.Buffer) string {
 	term := render.NewTerminal(buf.Width, buf.Height)
-	return term.RenderFull(buf)
+	return term.RenderInline(buf)
 }
 
-// RenderTo writes a buffer to an io.Writer with ANSI escape codes.
-// This is a convenience function for simple cases.
+// RenderTo writes a buffer to an io.Writer with ANSI escape codes for inline output.
+// This is a convenience function for simple cases where cursor positioning is not needed.
 func RenderTo(buf *render.Buffer, w io.Writer) {
 	term := render.NewTerminal(buf.Width, buf.Height)
-	term.RenderFullTo(buf, w)
+	term.RenderInlineTo(buf, w)
 }
