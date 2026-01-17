@@ -1,0 +1,55 @@
+# termistyle
+
+> CSS-like styling library for terminal UIs in Go. Build beautiful terminal interfaces with flexbox layouts, 24-bit RGB colors, borders, and text styling.
+
+Key features:
+- Flexbox layout engine powered by Yoga
+- 24-bit RGB colors for foreground and background
+- Multiple border styles with titles and per-side configuration
+- Text styling with bold, italic, underline, alignment, wrapping
+- Absolute positioning with z-index layering
+- Overflow control with clipping support
+
+Render pipeline: Style -> Box Tree -> Layout (Yoga) -> Buffer -> ANSI Output
+
+## Documentation
+
+- [README](https://github.com/termisquad/x/blob/main/termistyle/README.md): Installation, quick start, full API overview with code examples
+- [CLAUDE.md](https://github.com/termisquad/x/blob/main/termistyle/CLAUDE.md): Architecture overview and build/test commands
+
+## API Reference
+
+- [termistyle.go](https://github.com/termisquad/x/blob/main/termistyle/termistyle.go): Public API facade with all re-exported types and functions
+- [style/style.go](https://github.com/termisquad/x/blob/main/termistyle/style/style.go): Style struct with all layout and visual properties
+- [style/color.go](https://github.com/termisquad/x/blob/main/termistyle/style/color.go): Color type using hex strings (#RRGGBB)
+- [style/border.go](https://github.com/termisquad/x/blob/main/termistyle/style/border.go): Border styles, edges, and helper functions
+- [style/display.go](https://github.com/termisquad/x/blob/main/termistyle/style/display.go): Display, Position, Overflow, Flex enums
+- [style/spacing.go](https://github.com/termisquad/x/blob/main/termistyle/style/spacing.go): Padding and Margin helpers
+- [style/text.go](https://github.com/termisquad/x/blob/main/termistyle/style/text.go): Text styling properties (weight, decoration, alignment)
+- [layout/box.go](https://github.com/termisquad/x/blob/main/termistyle/layout/box.go): Box tree structure and Calculate method
+- [layout/yoga.go](https://github.com/termisquad/x/blob/main/termistyle/layout/yoga.go): Yoga flexbox integration
+- [draw/text.go](https://github.com/termisquad/x/blob/main/termistyle/draw/text.go): Text rendering to buffer
+- [draw/border.go](https://github.com/termisquad/x/blob/main/termistyle/draw/border.go): Border rendering to buffer
+
+## Examples
+
+- [Text rendering tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/text/text_test.go): Text styling, alignment, decoration examples
+- [Border tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/border/border_test.go): Border styles, colors, titles, partial borders
+- [Layout tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/layout/layout_test.go): Flexbox direction, justify, align, padding, margin, wrap
+- [Position tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/position/position_test.go): Absolute positioning and z-index layering
+- [Flex tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/flex/flex_test.go): FlexGrow and AlignSelf examples
+- [Dimensions tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/dimensions/dimensions_test.go): Min/Max constraints and AspectRatio
+- [Overflow tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/overflow/overflow_test.go): Hidden vs Visible clipping
+- [Display tests](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/display/display_test.go): Display None behavior
+
+## Sibling Module
+
+- [render package](https://github.com/termisquad/x/blob/main/render/): Low-level terminal rendering with Buffer, Terminal, and ANSI escape sequences
+
+## Development
+
+- [Helper palette](https://github.com/termisquad/x/blob/main/termistyle/tests/integration/helper/palette.go): Terminal Blues color palette for consistent styling
+
+## Optional
+
+- [Makefile](https://github.com/termisquad/x/blob/main/termistyle/Makefile): Build, test, lint, and format commands
